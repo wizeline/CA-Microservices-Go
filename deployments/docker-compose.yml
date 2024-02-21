@@ -1,0 +1,26 @@
+version: '3.9'
+services:
+  app:
+    container_name: ${CONTAINER}
+    image: ${CONTAINER}:${GO_VERSION}-${DEBIAN_VERSION}
+    build:
+      context: ../.
+      dockerfile: ./deployments/Dockerfile
+      args:
+        GO_VERSION: ${GO_VERSION}
+        DEBIAN_VERSION: ${DEBIAN_VERSION}
+        WORKDIR: ${WORKDIR}
+        PORT: ${PORT}
+    restart: on-failure
+    env_file: 
+      - ./app.env
+    environment:
+      - PORT=${PORT}
+    ports:
+      - 8080:${PORT}
+    networks:
+      http-api-net: {}
+
+networks:
+  http-api-net:
+    external: true
