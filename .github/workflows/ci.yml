@@ -9,7 +9,10 @@ on:
   pull_request:
     branches: [ main ]
   workflow_call:
-  
+
+env:
+    CAM_GO_VERSION: 1.22.0
+
 jobs:
   lint:
     name: lint files
