@@ -1,9 +1,9 @@
 package service
 
 import (
-	"github.com/wizeline/CA-Microservices-Go/internal/core/domain/entity"
-	repo "github.com/wizeline/CA-Microservices-Go/internal/core/domain/repository"
-	svc "github.com/wizeline/CA-Microservices-Go/internal/core/domain/service"
+	"github.com/wizeline/CA-Microservices-Go/internal/domain/entity"
+	repo "github.com/wizeline/CA-Microservices-Go/internal/domain/repository"
+	svc "github.com/wizeline/CA-Microservices-Go/internal/domain/service"
 )
 
 var _ svc.UserService = &UserService{}
