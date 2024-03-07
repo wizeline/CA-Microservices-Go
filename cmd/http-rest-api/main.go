@@ -3,5 +3,5 @@ package main
 import "fmt"
 
 func main() {
-	fmt.Println("Hello HTTP REST API")
+	fmt.Println(fmt.Sprintf("Hello HTTP REST API: %d", 123))
 }
