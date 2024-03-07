@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [ '*' ]
+    paths:
+      - '**.go'
+      - '.github/workflows/**.yml'
+  pull_request:
+    branches: [ main ]
+  workflow_call:
+
+env:
+    CAM_GO_VERSION: 1.22.0
+
+jobs:
+  lint:
+    name: lint files
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup GO
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.CAM_GO_VERSION }}
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: latest
+          args: --timeout 5m
+  
+  build:
+    needs: [ lint ]
+    name: build go app
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup go
+        uses: actions/setup-go@v4
+        with:
+          go-version: ${{ env.CAM_GO_VERSION }}
+      - name: Build go app
+        run: go build -o bin/app ./cmd/http-rest-api/...
