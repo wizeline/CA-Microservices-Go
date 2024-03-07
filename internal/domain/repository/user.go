@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"github.com/wizeline/CA-Microservices-Go/internal/core/domain/entity"
+	"github.com/wizeline/CA-Microservices-Go/internal/domain/entity"
 )
 
 type UserRepository interface {

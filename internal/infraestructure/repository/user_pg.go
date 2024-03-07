@@ -1,9 +1,9 @@
 package repository
 
 import (
-	"github.com/wizeline/CA-Microservices-Go/internal/core/domain/entity"
-	repo "github.com/wizeline/CA-Microservices-Go/internal/core/domain/repository"
-	"github.com/wizeline/CA-Microservices-Go/internal/core/infraestructure/db"
+	"github.com/wizeline/CA-Microservices-Go/internal/domain/entity"
+	repo "github.com/wizeline/CA-Microservices-Go/internal/domain/repository"
+	"github.com/wizeline/CA-Microservices-Go/internal/infraestructure/db"
 )
 
 var _ repo.UserRepository = &UserRepositoryPg{}
