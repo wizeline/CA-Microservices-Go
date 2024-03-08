@@ -6,6 +6,7 @@ import (
 	svc "github.com/wizeline/CA-Microservices-Go/internal/domain/service"
 )
 
+// We ensure the UserService implementation satisfies the UserService signature in the domain
 var _ svc.UserService = &UserService{}
 
 type UserService struct {

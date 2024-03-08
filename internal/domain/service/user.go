@@ -2,7 +2,11 @@ package service
 
 import (
 	"github.com/wizeline/CA-Microservices-Go/internal/domain/entity"
+	"github.com/wizeline/CA-Microservices-Go/internal/domain/service/mocks"
 )
+
+// We ensure the UserService mock object satisfies the UserService signature.
+var _ UserService = &mocks.UserService{}
 
 type UserService interface {
 	Add(user entity.User) (int, error)
