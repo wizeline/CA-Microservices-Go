@@ -38,7 +38,7 @@ func (conn *DBPgConn) Close() {
 	conn.db.Close()
 }
 
-// GetDB returns the underlying *sql.DB instance.
-func (conn *DBPgConn) GetDB() *sql.DB {
+// DB returns the underlying *sql.DB instance.
+func (conn *DBPgConn) DB() *sql.DB {
 	return conn.db
 }

@@ -25,8 +25,14 @@ stop:
 remove: stop
 	docker compose --env-file ./deployments/app.env -f ./deployments/docker-compose.yml rm --force app
 
-# Remove containers and docker images
+# Remove Docker containers and generated images
 clean: stop remove
 	docker rmi -f ${CONTAINER}:${GO_VERSION}-${DEBIAN_VERSION} || true
 	docker network rm ${NETWORK_NAME} || true
 	docker images -f dangling=true -q | xargs docker rmi
+
+# Generate mock objects
+mocks:
+	mockery --name=UserRepository --srcpkg=./internal/domain/repository --output=./internal/domain/repository/mocks
+	mockery --name=UserService --srcpkg=./internal/domain/service --output=./internal/domain/service/mocks
+	mockery --name=PgConn --srcpkg=./internal/infrastructure/repository --output=./internal/infrastructure/repository/mocks

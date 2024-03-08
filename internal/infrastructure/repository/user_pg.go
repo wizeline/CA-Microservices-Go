@@ -1,18 +1,25 @@
 package repository
 
 import (
+	"database/sql"
+
 	"github.com/wizeline/CA-Microservices-Go/internal/domain/entity"
 	repo "github.com/wizeline/CA-Microservices-Go/internal/domain/repository"
-	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/db"
 )
 
+// We ensure the UserRepositoryPg implementation satisfies the UserRepository signature in the domain
 var _ repo.UserRepository = &UserRepositoryPg{}
 
-type UserRepositoryPg struct {
-	conn *db.DBPgConn
+type PgConn interface {
+	DB() *sql.DB
+	Close()
 }
 
-func NewUserRepositoryPg(conn *db.DBPgConn) UserRepositoryPg {
+type UserRepositoryPg struct {
+	conn PgConn
+}
+
+func NewUserRepositoryPg(conn PgConn) UserRepositoryPg {
 	return UserRepositoryPg{
 		conn: conn,
 	}
