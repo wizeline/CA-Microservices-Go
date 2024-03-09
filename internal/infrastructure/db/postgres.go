@@ -6,6 +6,7 @@ import (
 	"log"
 
 	_ "github.com/lib/pq"
+	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/config"
 )
 
 // DBPgConn handles the PostgreSQL database connection.
@@ -14,9 +15,9 @@ type DBPgConn struct {
 }
 
 // NewDBPgConn creates a new database connector instance.
-func NewDBPgConn(host, port, user, password, dbname string) (*DBPgConn, error) {
-	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		host, port, user, password, dbname)
+func NewDBPgConn(cfg config.PostgreSQL) (*DBPgConn, error) {
+	connStr := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+		cfg.Host(), cfg.Port(), cfg.User(), cfg.Passwd(), cfg.DBName())
 
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
