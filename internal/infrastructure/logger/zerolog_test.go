@@ -7,6 +7,7 @@ import (
 )
 
 func TestNewZeroLog(t *testing.T) {
-	zl := NewZeroLog(DefaultTimeFormat)
-	assert.NotNil(t, zl)
+	zl := NewZeroLog()
+	assert.NotEqual(t, zl, ZeroLog{})
+	zl.Log().Info().Msg("NewZeroLog tested successfully")
 }
