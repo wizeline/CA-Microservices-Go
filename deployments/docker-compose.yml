@@ -2,7 +2,7 @@ version: '3.9'
 services:
   app:
     container_name: ${APP_NAME}
-    image: ${APP_NAME}:${GO_VERSION}-${DEBIAN_VERSION}
+    image: ${APP_NAME}:${GO_VERSION}-${ALPINE_VERSION}
     build:
       context: ../.
       dockerfile: ./deployments/Dockerfile
@@ -10,7 +10,7 @@ services:
         APP_NAME: ${APP_NAME}
         APP_BIN: ${APP_BIN}
         GO_VERSION: ${GO_VERSION}
-        DEBIAN_VERSION: ${DEBIAN_VERSION}
+        ALPINE_VERSION: ${ALPINE_VERSION}
         WORKDIR: ${WORKDIR}
         PORT: ${PORT}
     restart: on-failure
@@ -29,7 +29,7 @@ services:
   db:
     # TODO: implement persistance data(volumen) for PG_DATA
     container_name: pg-db
-    image: postgres:${DEBIAN_VERSION}
+    image: postgres:alpine${ALPINE_VERSION}
     restart: on-failure
     environment:
       - POSTGRES_DB=${DATABASE_POSTGRES_DBNAME}
