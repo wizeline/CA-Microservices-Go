@@ -7,7 +7,7 @@
 *.dll
 *.so
 *.dylib
-http-api
+camgo
 
 # Test binary, built with `go test -c`
 *.test
@@ -20,4 +20,3 @@ http-api
 
 # Go workspace file
 go.work
-

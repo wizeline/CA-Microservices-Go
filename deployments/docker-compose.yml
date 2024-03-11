@@ -1,26 +1,47 @@
 version: '3.9'
 services:
   app:
-    container_name: ${CONTAINER}
-    image: ${CONTAINER}:${GO_VERSION}-${DEBIAN_VERSION}
+    container_name: ${APP_NAME}
+    image: ${APP_NAME}:${GO_VERSION}-${DEBIAN_VERSION}
     build:
       context: ../.
       dockerfile: ./deployments/Dockerfile
       args:
+        APP_NAME: ${APP_NAME}
+        APP_BIN: ${APP_BIN}
         GO_VERSION: ${GO_VERSION}
         DEBIAN_VERSION: ${DEBIAN_VERSION}
         WORKDIR: ${WORKDIR}
         PORT: ${PORT}
     restart: on-failure
     env_file: 
-      - ./app.env
+      - .env
     environment:
       - PORT=${PORT}
     ports:
       - 8080:${PORT}
     networks:
-      http-api-net: {}
+      # TODO: dynamically set network name with the prefix APP_NAME 
+      camgo-net: {}
+    depends_on:
+      - db
+
+  db:
+    # TODO: implement persistance data(volumen) for PG_DATA
+    container_name: pg-db
+    image: postgres:${DEBIAN_VERSION}
+    restart: on-failure
+    environment:
+      - POSTGRES_DB=${DATABASE_POSTGRES_DBNAME}
+      - POSTGRES_USER=${DATABASE_POSTGRES_USER}
+      - POSTGRES_PASSWORD=${DATABASE_POSTGRES_PASSWD}
+    ports:
+      - 5432:${DATABASE_POSTGRES_PORT}
+    networks:
+      # TODO: dynamically set network name with the prefix APP_NAME 
+      camgo-net: {}
 
 networks:
-  http-api-net:
+  # TODO: dynamically set network name with the prefix APP_NAME 
+  camgo-net:
     external: true

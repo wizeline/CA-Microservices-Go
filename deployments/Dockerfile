@@ -1,9 +1,13 @@
+#################
 #  BUILD STAGE
+####
 ARG DEBIAN_VERSION
 ARG GO_VERSION
 FROM golang:${GO_VERSION}-${DEBIAN_VERSION} AS builder
 
+ARG APP_NAME
 ARG WORKDIR
+
 WORKDIR ${WORKDIR}
 
 ADD . .
@@ -13,7 +17,7 @@ RUN set -eux \
         && go mod verify \
         && go mod tidy -v
 
-RUN go build -o http-api ./cmd/http-rest-api/...
+RUN go build -o ${APP_NAME} ./cmd/http-rest-api/...
 
 #################
 #  RUN STAGE
@@ -23,7 +27,9 @@ LABEL org.name="Wizeline"
 LABEL org.image.title="CA-Microservices-GO"
 LABEL org.image.description="Debian image to execute a GO Rest API service"
 
-ARG USER="http-api"
+ARG APP_NAME
+ARG APP_BIN
+ARG USER="${APP_NAME}user"
 ARG PORT=8080
 ARG WORKDIR
 
@@ -31,11 +37,11 @@ WORKDIR ${WORKDIR}
 
 RUN  set -eux \
         && useradd \
-                --comment "http api user" \
+                --comment "${APP_NAME} user" \
                 --create-home \
                 ${USER}
 
-COPY --from=builder ${WORKDIR}/http-api /usr/local/bin/http-api
+COPY --from=builder ${WORKDIR}/${APP_NAME} ${APP_BIN}
 
 EXPOSE ${PORT}
 
