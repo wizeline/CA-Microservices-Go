@@ -1,9 +1,9 @@
 #################
 #  BUILD STAGE
 ####
-ARG DEBIAN_VERSION
+ARG ALPINE_VERSION
 ARG GO_VERSION
-FROM golang:${GO_VERSION}-${DEBIAN_VERSION} AS builder
+FROM golang:${GO_VERSION}-alpine${ALPINE_VERSION} AS builder
 
 ARG APP_NAME
 ARG WORKDIR
@@ -22,10 +22,10 @@ RUN go build -o ${APP_NAME} ./cmd/http-rest-api/...
 #################
 #  RUN STAGE
 ####
-FROM debian:${DEBIAN_VERSION}-slim
+FROM alpine:${ALPINE_VERSION}
 LABEL org.name="Wizeline"
 LABEL org.image.title="CA-Microservices-GO"
-LABEL org.image.description="Debian image to execute a GO Rest API service"
+LABEL org.image.description="Alpine image to execute a GO Rest API service"
 
 ARG APP_NAME
 ARG APP_BIN
@@ -36,9 +36,9 @@ ARG WORKDIR
 WORKDIR ${WORKDIR}
 
 RUN  set -eux \
-        && useradd \
-                --comment "${APP_NAME} user" \
-                --create-home \
+        && adduser \
+                -g "${APP_NAME} api user" \
+                --disabled-password \
                 ${USER}
 
 COPY --from=builder ${WORKDIR}/${APP_NAME} ${APP_BIN}

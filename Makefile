@@ -6,9 +6,10 @@ export $(shell sed 's/=.*//' deployments/.env)
 network:
 	docker network create -d bridge ${NETWORK_NAME} || true
 
-# Create and get the required docker images
-docker-img: network
-	docker pull postgres:${DEBIAN_VERSION}
+# Create and pull the required docker images
+docker: network
+	docker pull golang:${GO_VERSION}-alpine${ALPINE_VERSION}
+	docker pull postgres:alpine${ALPINE_VERSION}
 	docker-compose -f ./deployments/docker-compose.yml build app
 
 # Build the application
@@ -32,7 +33,9 @@ remove: stop
 
 # Remove Docker containers and generated images
 clean: stop remove
-	docker rmi -f ${APP_NAME}:${GO_VERSION}-${DEBIAN_VERSION} || true
+	docker compose -f ./deployments/docker-compose.yml stop db
+	docker compose -f ./deployments/docker-compose.yml rm --force db
+	docker rmi -f ${APP_NAME}:${GO_VERSION}-${ALPINE_VERSION} || true
 	docker network rm ${NETWORK_NAME} || true
 	docker images -f dangling=true -q | xargs docker rmi
 
