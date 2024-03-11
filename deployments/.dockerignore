@@ -1,0 +1,10 @@
+/api
+/docs
+/.github
+/.github/*
+
+
+*.log
+*.md
+Makefile
+.gitignore
