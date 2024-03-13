@@ -53,10 +53,10 @@ func NewConfig() Config {
 		Database: Database{
 			driver: viper.GetString("database.driver"),
 			Postgres: PostgreSQL{
-				host:   viper.GetString("database.postgres.host"),
-				port:   viper.GetInt("database.postgres.port"),
-				user:   viper.GetString("database.postgres.user"),
-				dbname: viper.GetString("database.postgres.dbname"),
+				Host:   viper.GetString("database.postgres.host"),
+				Port:   viper.GetInt("database.postgres.port"),
+				User:   viper.GetString("database.postgres.user"),
+				DBName: viper.GetString("database.postgres.dbname"),
 			},
 		},
 	}

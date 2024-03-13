@@ -17,7 +17,7 @@ type DBPgConn struct {
 // NewDBPgConn creates a new database connector instance.
 func NewDBPgConn(cfg config.PostgreSQL) (*DBPgConn, error) {
 	connStr := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		cfg.Host(), cfg.Port(), cfg.User(), cfg.Passwd(), cfg.DBName())
+		cfg.Host, cfg.Port, cfg.User, cfg.Passwd, cfg.DBName)
 
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
