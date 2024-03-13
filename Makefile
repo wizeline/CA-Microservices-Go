@@ -2,14 +2,19 @@
 include ./deployments/.env
 export $(shell sed 's/=.*//' deployments/.env)
 
+help:
+	@echo "Available targets:"
+	@echo "  postgres   - Start PostgreSQL container"
+	@echo "  pgadmin    - Start pgAdmin container"
+	@echo "  clean      - Stop and remove containers"
+
 # Create Network for application
 network:
 	docker network create -d bridge ${NETWORK_NAME} || true
 
 # Create and pull the required docker images
-docker: network
+app-img: network
 	docker pull golang:${GO_VERSION}-alpine${ALPINE_VERSION}
-	docker pull postgres:alpine${ALPINE_VERSION}
 	docker-compose -f ./deployments/docker-compose.yml build app
 
 # Build the application
@@ -39,7 +44,33 @@ clean: stop remove
 	docker network rm ${NETWORK_NAME} || true
 	docker images -f dangling=true -q | xargs docker rmi
 
-# TODO: Implement database handling
+# PostgreSQL database
+pgdb:
+	docker pull postgres:alpine${ALPINE_VERSION}
+	docker-compose -f ./deployments/docker-compose.yml up -d pgdb
+
+pgdb-stop:
+	docker-compose -f ./deployments/docker-compose.yml stop pgdb
+
+pgdb-rm: pgdb-stop
+	docker-compose -f ./deployments/docker-compose.yml rm --force pgdb
+
+pgdb-clean: pgdb-rm
+	docker rmi -f postgres:alpine${ALPINE_VERSION} || true
+
+# PgAdmin: default PostgreSQL GUI
+pgadmin:
+	docker pull dpage/pgadmin4:${PGADMIN_VERSION}
+	docker-compose -f ./deployments/docker-compose.yml up -d pgadmin
+
+pgadmin-stop:
+	docker compose -f ./deployments/docker-compose.yml stop pgadmin
+
+pgadmin-rm: pgadmin-stop
+	docker compose -f ./deployments/docker-compose.yml rm --force pgadmin
+
+pgadmin-clean: pgadmin-rm
+	docker rmi -f dpage/pgadmin4:${PGADMIN_VERSION} || true
 
 # Generate mock objects
 mocks:
