@@ -29,11 +29,11 @@ func TestNewConfig(t *testing.T) {
 				Database: Database{
 					driver: "postgres",
 					Postgres: PostgreSQL{
-						host:   "localhost",
-						port:   5432,
-						user:   "postgres",
-						passwd: "",
-						dbname: defaultAppName,
+						Host:   "localhost",
+						Port:   5432,
+						User:   "postgres",
+						Passwd: "",
+						DBName: defaultAppName,
 					},
 				},
 			},

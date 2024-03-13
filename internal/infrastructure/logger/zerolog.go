@@ -30,7 +30,7 @@ func NewZeroLog() ZeroLog {
 	}
 }
 
-// Log returns the pointer of the zerolog.Logger object
+// Log returns the underlying zerolog.Logger instance
 func (l ZeroLog) Log() *zerolog.Logger {
 	return l.logger
 }
