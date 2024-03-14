@@ -48,4 +48,4 @@ EXPOSE ${PORT}
 # USER MODE
 USER ${USER}
 
-ENTRYPOINT ["/usr/local/bin/http-api"]
+ENTRYPOINT ["/usr/local/bin/camgo"]
