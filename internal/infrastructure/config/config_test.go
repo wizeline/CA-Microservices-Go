@@ -21,7 +21,7 @@ func TestNewConfig(t *testing.T) {
 					name:    defaultAppName,
 					version: "v0.0.0",
 				},
-				Server: HTTPServer{
+				HTTPServer: HTTPServer{
 					host:            "localhost",
 					port:            8080,
 					shutdownTimeout: 15000000000,
@@ -29,11 +29,11 @@ func TestNewConfig(t *testing.T) {
 				Database: Database{
 					driver: "postgres",
 					Postgres: PostgreSQL{
-						Host:   "localhost",
-						Port:   5432,
-						User:   "postgres",
-						Passwd: "",
-						DBName: defaultAppName,
+						host:   "localhost",
+						port:   5432,
+						user:   defaultAppName + "user",
+						passwd: defaultAppName + "p4s5W0rD",
+						dbname: defaultAppName,
 					},
 				},
 			},

@@ -9,15 +9,15 @@ import (
 	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/config"
 )
 
-// DBPgConn handles the PostgreSQL database connection.
-type DBPgConn struct {
+// PgConn handles the PostgreSQL database connection.
+type PgConn struct {
 	db *sql.DB
 }
 
-// NewDBPgConn creates a new database connector instance.
-func NewDBPgConn(cfg config.PostgreSQL) (*DBPgConn, error) {
+// NewPgConn creates a new database connector instance.
+func NewPgConn(cfg config.PostgreSQL) (*PgConn, error) {
 	connStr := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		cfg.Host, cfg.Port, cfg.User, cfg.Passwd, cfg.DBName)
+		cfg.Host(), cfg.Port(), cfg.User(), cfg.Passwd(), cfg.DBName())
 
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
@@ -31,15 +31,15 @@ func NewDBPgConn(cfg config.PostgreSQL) (*DBPgConn, error) {
 		return nil, err
 	}
 
-	return &DBPgConn{db}, nil
+	return &PgConn{db}, nil
 }
 
 // Close closes the database connection.
-func (conn *DBPgConn) Close() {
-	conn.db.Close()
+func (conn *PgConn) Close() error {
+	return conn.db.Close()
 }
 
 // DB returns the underlying *sql.DB instance.
-func (conn *DBPgConn) DB() *sql.DB {
+func (conn *PgConn) DB() *sql.DB {
 	return conn.db
 }

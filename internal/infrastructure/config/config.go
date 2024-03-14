@@ -12,7 +12,7 @@ const defaultAppName = "camgo"
 // Config is the representation of the application's configuration.
 type Config struct {
 	Application Application
-	Server      HTTPServer
+	HTTPServer  HTTPServer
 	Database    Database
 }
 
@@ -28,8 +28,8 @@ func setDefaultConfig() {
 	viper.SetDefault("database.driver", "postgres")
 	viper.SetDefault("database.postgres.host", "localhost")
 	viper.SetDefault("database.postgres.port", 5432)
-	viper.SetDefault("database.postgres.user", "postgres")
-	viper.SetDefault("database.postgres.passwd", "")
+	viper.SetDefault("database.postgres.user", defaultAppName+"user")
+	viper.SetDefault("database.postgres.passwd", defaultAppName+"p4s5W0rD")
 	viper.SetDefault("database.postgres.dbname", defaultAppName)
 }
 
@@ -45,7 +45,7 @@ func NewConfig() Config {
 			name:    viper.GetString("application.name"),
 			version: viper.GetString("application.version"),
 		},
-		Server: HTTPServer{
+		HTTPServer: HTTPServer{
 			host:            viper.GetString("http.server.host"),
 			port:            viper.GetInt("http.server.port"),
 			shutdownTimeout: viper.GetDuration("http.server.shutdown.timeout"),
@@ -53,10 +53,11 @@ func NewConfig() Config {
 		Database: Database{
 			driver: viper.GetString("database.driver"),
 			Postgres: PostgreSQL{
-				Host:   viper.GetString("database.postgres.host"),
-				Port:   viper.GetInt("database.postgres.port"),
-				User:   viper.GetString("database.postgres.user"),
-				DBName: viper.GetString("database.postgres.dbname"),
+				host:   viper.GetString("database.postgres.host"),
+				port:   viper.GetInt("database.postgres.port"),
+				user:   viper.GetString("database.postgres.user"),
+				passwd: viper.GetString("database.postgres.passwd"),
+				dbname: viper.GetString("database.postgres.dbname"),
 			},
 		},
 	}

@@ -13,31 +13,21 @@ type UserRepository struct {
 }
 
 // Create provides a mock function with given fields: user
-func (_m *UserRepository) Create(user entity.User) (int, error) {
+func (_m *UserRepository) Create(user entity.User) error {
 	ret := _m.Called(user)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Create")
 	}
 
-	var r0 int
-	var r1 error
-	if rf, ok := ret.Get(0).(func(entity.User) (int, error)); ok {
-		return rf(user)
-	}
-	if rf, ok := ret.Get(0).(func(entity.User) int); ok {
+	var r0 error
+	if rf, ok := ret.Get(0).(func(entity.User) error); ok {
 		r0 = rf(user)
 	} else {
-		r0 = ret.Get(0).(int)
+		r0 = ret.Error(0)
 	}
 
-	if rf, ok := ret.Get(1).(func(entity.User) error); ok {
-		r1 = rf(user)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
+	return r0
 }
 
 // Delete provides a mock function with given fields: id
@@ -116,17 +106,17 @@ func (_m *UserRepository) ReadAll() ([]entity.User, error) {
 	return r0, r1
 }
 
-// Update provides a mock function with given fields: id, data
-func (_m *UserRepository) Update(id int, data entity.User) error {
-	ret := _m.Called(id, data)
+// Update provides a mock function with given fields: user
+func (_m *UserRepository) Update(user entity.User) error {
+	ret := _m.Called(user)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Update")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(int, entity.User) error); ok {
-		r0 = rf(id, data)
+	if rf, ok := ret.Get(0).(func(entity.User) error); ok {
+		r0 = rf(user)
 	} else {
 		r0 = ret.Error(0)
 	}
