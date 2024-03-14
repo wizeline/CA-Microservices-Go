@@ -9,9 +9,9 @@ import (
 var _ UserRepository = &mocks.UserRepository{}
 
 type UserRepository interface {
-	Create(user entity.User) (int, error)
+	Create(user entity.User) error
 	Read(id int) (entity.User, error)
 	ReadAll() ([]entity.User, error)
-	Update(id int, data entity.User) error
+	Update(user entity.User) error
 	Delete(id int) error
 }

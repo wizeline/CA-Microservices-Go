@@ -76,4 +76,3 @@ pgadmin-clean: pgadmin-rm
 mocks:
 	mockery --name=UserRepository --srcpkg=./internal/domain/repository --output=./internal/domain/repository/mocks
 	mockery --name=UserService --srcpkg=./internal/domain/service --output=./internal/domain/service/mocks
-	mockery --name=PgConn --srcpkg=./internal/infrastructure/repository --output=./internal/infrastructure/repository/mocks
