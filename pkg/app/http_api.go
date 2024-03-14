@@ -4,7 +4,10 @@ import (
 	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/config"
 	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/db"
 	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/db/migration"
+	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/handler"
 	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/logger"
+	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/repository"
+	"github.com/wizeline/CA-Microservices-Go/internal/service"
 )
 
 type ApiHTTP struct {
@@ -29,9 +32,12 @@ func NewApiHTTP(cfg config.Config, l logger.ZeroLog) (ApiHTTP, func(), error) {
 		return ApiHTTP{}, nil, err
 	}
 
+	// Clean Architecture
+	userRepo := repository.NewUserRepositoryPg(conn.DB())
+	userSvc := service.NewUser(userRepo)
+	_ = handler.NewUserHandler(userSvc)
+
 	// TODO: imeplement the rest of application setup and start
-	// - Service
-	// - Controller
 	// - Router
 	// - HttpServer
 

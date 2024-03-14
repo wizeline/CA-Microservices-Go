@@ -3,6 +3,7 @@ CREATE TABLE IF NOT EXISTS users (
     first_name VARCHAR (255) NOT NULL,
     last_name VARCHAR (255) NOT NULL,
     email VARCHAR (255) UNIQUE NOT NULL, 
+    birthday DATE NOT NULL,
     
     username VARCHAR (50) UNIQUE NOT NULL, 
     passwd TEXT NOT NULL, 

@@ -1,6 +1,9 @@
 package entity
 
-import "time"
+import (
+	"database/sql"
+	"time"
+)
 
 type User struct {
 	ID        int
@@ -12,8 +15,8 @@ type User struct {
 	Username  string
 	Passwd    string
 	Active    bool
-	LastLogin time.Time
+	LastLogin sql.NullTime
 
 	CreatedAt time.Time
-	UpdatedAt time.Time
+	UpdatedAt sql.NullTime
 }
