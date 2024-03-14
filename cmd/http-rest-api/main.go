@@ -1,7 +1,23 @@
 package main
 
-import "fmt"
+import (
+	"os"
+
+	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/config"
+	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/logger"
+	"github.com/wizeline/CA-Microservices-Go/pkg/app"
+)
 
 func main() {
-	fmt.Println("Hello HTTP REST API:", 123)
+	l := logger.NewZeroLog()
+	cfg := config.NewConfig()
+
+	api, clean, err := app.NewApiHTTP(cfg, l)
+	if err != nil {
+		l.Log().Err(err).Msg("http rest api startup failed")
+		os.Exit(1)
+	}
+	defer clean()
+
+	api.Start()
 }
