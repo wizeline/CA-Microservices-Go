@@ -34,7 +34,7 @@ func (r UserRepositoryPg) Create(user entity.User) error {
 	return nil
 }
 
-func (r UserRepositoryPg) Read(id int) (entity.User, error) {
+func (r UserRepositoryPg) Read(id uint64) (entity.User, error) {
 	var user entity.User
 	row := r.db.QueryRow(`
 		SELECT id, first_name, last_name, email, birthday,
@@ -113,7 +113,7 @@ func (r UserRepositoryPg) Update(user entity.User) error {
 	return err
 }
 
-func (r UserRepositoryPg) Delete(id int) error {
+func (r UserRepositoryPg) Delete(id uint64) error {
 	_, err := r.db.Exec("DELETE FROM users WHERE id = $1", id)
 	return err
 }
