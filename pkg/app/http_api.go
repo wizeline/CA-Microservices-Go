@@ -2,9 +2,9 @@ package app
 
 import (
 	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/config"
+	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/controller"
 	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/db"
 	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/db/migration"
-	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/handler"
 	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/logger"
 	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/repository"
 	"github.com/wizeline/CA-Microservices-Go/internal/service"
@@ -33,9 +33,9 @@ func NewApiHTTP(cfg config.Config, l logger.ZeroLog) (ApiHTTP, func(), error) {
 	}
 
 	// Clean Architecture
-	userRepo := repository.NewUserRepositoryPg(conn.DB())
-	userSvc := service.NewUser(userRepo)
-	_ = handler.NewUserHandler(userSvc)
+	userRepo := repository.NewUserRepoPg(conn.DB())
+	userSvc := service.NewUserService(userRepo, l)
+	_ = controller.NewUserController(userSvc)
 
 	// TODO: imeplement the rest of application setup and start
 	// - Router

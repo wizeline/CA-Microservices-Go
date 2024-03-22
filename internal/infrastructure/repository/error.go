@@ -9,6 +9,18 @@ var (
 	ErrFieldEmpty = errors.New("field value empty")
 )
 
+type Err struct {
+	Err error
+}
+
+func (e Err) Error() string {
+	return fmt.Sprintf("repository: %s", e.Err)
+}
+
+func (e Err) Unwrap() error {
+	return e.Err
+}
+
 type EntityEmptyErr struct {
 	Name string
 }
