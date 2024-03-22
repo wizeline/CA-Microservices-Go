@@ -12,36 +12,26 @@ type UserService struct {
 	mock.Mock
 }
 
-// Add provides a mock function with given fields: user
-func (_m *UserService) Add(user entity.User) (int, error) {
-	ret := _m.Called(user)
+// Activate provides a mock function with given fields: id
+func (_m *UserService) Activate(id uint64) error {
+	ret := _m.Called(id)
 
 	if len(ret) == 0 {
-		panic("no return value specified for Add")
+		panic("no return value specified for Activate")
 	}
 
-	var r0 int
-	var r1 error
-	if rf, ok := ret.Get(0).(func(entity.User) (int, error)); ok {
-		return rf(user)
-	}
-	if rf, ok := ret.Get(0).(func(entity.User) int); ok {
-		r0 = rf(user)
+	var r0 error
+	if rf, ok := ret.Get(0).(func(uint64) error); ok {
+		r0 = rf(id)
 	} else {
-		r0 = ret.Get(0).(int)
+		r0 = ret.Error(0)
 	}
 
-	if rf, ok := ret.Get(1).(func(entity.User) error); ok {
-		r1 = rf(user)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
+	return r0
 }
 
 // ChangeEmail provides a mock function with given fields: id, email
-func (_m *UserService) ChangeEmail(id int, email string) error {
+func (_m *UserService) ChangeEmail(id uint64, email string) error {
 	ret := _m.Called(id, email)
 
 	if len(ret) == 0 {
@@ -49,7 +39,7 @@ func (_m *UserService) ChangeEmail(id int, email string) error {
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(int, string) error); ok {
+	if rf, ok := ret.Get(0).(func(uint64, string) error); ok {
 		r0 = rf(id, email)
 	} else {
 		r0 = ret.Error(0)
@@ -58,8 +48,44 @@ func (_m *UserService) ChangeEmail(id int, email string) error {
 	return r0
 }
 
+// ChangePasswd provides a mock function with given fields: id, passwd
+func (_m *UserService) ChangePasswd(id uint64, passwd string) error {
+	ret := _m.Called(id, passwd)
+
+	if len(ret) == 0 {
+		panic("no return value specified for ChangePasswd")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(uint64, string) error); ok {
+		r0 = rf(id, passwd)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// Create provides a mock function with given fields: user
+func (_m *UserService) Create(user entity.User) error {
+	ret := _m.Called(user)
+
+	if len(ret) == 0 {
+		panic("no return value specified for Create")
+	}
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(entity.User) error); ok {
+		r0 = rf(user)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // Delete provides a mock function with given fields: id
-func (_m *UserService) Delete(id int) error {
+func (_m *UserService) Delete(id uint64) error {
 	ret := _m.Called(id)
 
 	if len(ret) == 0 {
@@ -67,7 +93,7 @@ func (_m *UserService) Delete(id int) error {
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(int) error); ok {
+	if rf, ok := ret.Get(0).(func(uint64) error); ok {
 		r0 = rf(id)
 	} else {
 		r0 = ret.Error(0)
@@ -107,7 +133,7 @@ func (_m *UserService) Find(filter string, value string) ([]entity.User, error) 
 }
 
 // Get provides a mock function with given fields: id
-func (_m *UserService) Get(id int) (entity.User, error) {
+func (_m *UserService) Get(id uint64) (entity.User, error) {
 	ret := _m.Called(id)
 
 	if len(ret) == 0 {
@@ -116,17 +142,47 @@ func (_m *UserService) Get(id int) (entity.User, error) {
 
 	var r0 entity.User
 	var r1 error
-	if rf, ok := ret.Get(0).(func(int) (entity.User, error)); ok {
+	if rf, ok := ret.Get(0).(func(uint64) (entity.User, error)); ok {
 		return rf(id)
 	}
-	if rf, ok := ret.Get(0).(func(int) entity.User); ok {
+	if rf, ok := ret.Get(0).(func(uint64) entity.User); ok {
 		r0 = rf(id)
 	} else {
 		r0 = ret.Get(0).(entity.User)
 	}
 
-	if rf, ok := ret.Get(1).(func(int) error); ok {
+	if rf, ok := ret.Get(1).(func(uint64) error); ok {
 		r1 = rf(id)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetAll provides a mock function with given fields:
+func (_m *UserService) GetAll() ([]entity.User, error) {
+	ret := _m.Called()
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetAll")
+	}
+
+	var r0 []entity.User
+	var r1 error
+	if rf, ok := ret.Get(0).(func() ([]entity.User, error)); ok {
+		return rf()
+	}
+	if rf, ok := ret.Get(0).(func() []entity.User); ok {
+		r0 = rf()
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]entity.User)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -135,7 +191,7 @@ func (_m *UserService) Get(id int) (entity.User, error) {
 }
 
 // IsActive provides a mock function with given fields: id
-func (_m *UserService) IsActive(id int) (bool, error) {
+func (_m *UserService) IsActive(id uint64) (bool, error) {
 	ret := _m.Called(id)
 
 	if len(ret) == 0 {
@@ -144,16 +200,16 @@ func (_m *UserService) IsActive(id int) (bool, error) {
 
 	var r0 bool
 	var r1 error
-	if rf, ok := ret.Get(0).(func(int) (bool, error)); ok {
+	if rf, ok := ret.Get(0).(func(uint64) (bool, error)); ok {
 		return rf(id)
 	}
-	if rf, ok := ret.Get(0).(func(int) bool); ok {
+	if rf, ok := ret.Get(0).(func(uint64) bool); ok {
 		r0 = rf(id)
 	} else {
 		r0 = ret.Get(0).(bool)
 	}
 
-	if rf, ok := ret.Get(1).(func(int) error); ok {
+	if rf, ok := ret.Get(1).(func(uint64) error); ok {
 		r1 = rf(id)
 	} else {
 		r1 = ret.Error(1)
@@ -162,17 +218,17 @@ func (_m *UserService) IsActive(id int) (bool, error) {
 	return r0, r1
 }
 
-// Update provides a mock function with given fields: id, data
-func (_m *UserService) Update(id int, data entity.User) error {
-	ret := _m.Called(id, data)
+// Update provides a mock function with given fields: user
+func (_m *UserService) Update(user entity.User) error {
+	ret := _m.Called(user)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Update")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(int, entity.User) error); ok {
-		r0 = rf(id, data)
+	if rf, ok := ret.Get(0).(func(entity.User) error); ok {
+		r0 = rf(user)
 	} else {
 		r0 = ret.Error(0)
 	}
