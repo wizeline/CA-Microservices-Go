@@ -16,8 +16,8 @@ High-Level Architecture Diagram. (to be defined)
 - Local-Dev: handy management tools through make statements
 - GitHub Actions (CI/CD) base layout
 - [Mockery](https://github.com/vektra/mockery) (mocks)
-- [Viper](https://github.com/spf13/viper) support (configuration)
-- [Echo](https://echo.labstack.com/) Framework (http-server)
+- [Viper](https://github.com/spf13/viper) support (env configuration)
+- [Chi](https://github.com/go-chi/chi) (router)
 - [ZeroLog](https://github.com/rs/zerolog) (logger)
 - [PostgreSQL](https://www.postgresql.org/) database support
 - [PgAdmin](https://www.pgadmin.org/) PostgreSQL database Web-GUI

@@ -8,19 +8,19 @@ import (
 )
 
 // We ensure the UserRepositoryPg implementation satisfies the UserRepository signature in the domain
-var _ repo.UserRepository = &UserRepositoryPg{}
+var _ repo.UserRepository = &UserRepoPg{}
 
-type UserRepositoryPg struct {
+type UserRepoPg struct {
 	db *sql.DB
 }
 
-func NewUserRepositoryPg(db *sql.DB) UserRepositoryPg {
-	return UserRepositoryPg{
+func NewUserRepoPg(db *sql.DB) UserRepoPg {
+	return UserRepoPg{
 		db: db,
 	}
 }
 
-func (r UserRepositoryPg) Create(user entity.User) error {
+func (r UserRepoPg) Create(user entity.User) error {
 	if err := validateUser(user); err != nil {
 		return err
 	}
@@ -38,7 +38,7 @@ func (r UserRepositoryPg) Create(user entity.User) error {
 	return nil
 }
 
-func (r UserRepositoryPg) Read(id int) (entity.User, error) {
+func (r UserRepoPg) Read(id int) (entity.User, error) {
 	var user entity.User
 	row := r.db.QueryRow(`
 		SELECT id, first_name, last_name, email, birthday,
@@ -56,7 +56,7 @@ func (r UserRepositoryPg) Read(id int) (entity.User, error) {
 	return user, nil
 }
 
-func (r UserRepositoryPg) ReadAll() ([]entity.User, error) {
+func (r UserRepoPg) ReadAll() ([]entity.User, error) {
 	rows, err := r.db.Query(`
 	SELECT id, first_name, last_name, email, birthday, 
 		username, passwd, active, last_login,
@@ -88,7 +88,7 @@ func (r UserRepositoryPg) ReadAll() ([]entity.User, error) {
 	return users, nil
 }
 
-func (r UserRepositoryPg) Update(user entity.User) error {
+func (r UserRepoPg) Update(user entity.User) error {
 	if err := validateUser(user); err != nil {
 		return err
 	}
@@ -117,7 +117,7 @@ func (r UserRepositoryPg) Update(user entity.User) error {
 	return err
 }
 
-func (r UserRepositoryPg) Delete(id int) error {
+func (r UserRepoPg) Delete(id int) error {
 	_, err := r.db.Exec("DELETE FROM users WHERE id = $1", id)
 	return err
 }
