@@ -1,228 +1,233 @@
 package controller
 
-// import (
-// 	"testing"
+import (
+	"bytes"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"testing"
 
-// 	"github.com/wizeline/CA-Microservices-Go/internal/domain/entity"
-// 	"github.com/wizeline/CA-Microservices-Go/internal/domain/service/mocks"
-// )
+	"github.com/wizeline/CA-Microservices-Go/internal/domain/entity"
+	"github.com/wizeline/CA-Microservices-Go/internal/domain/service/mocks"
 
-// func TestUserCtrl_add(t *testing.T) {
-// 	type svc struct {
-// 		args entity.User
-// 		err  error
-// 	}
-// 	type req struct {
-// 		payload string
-// 	}
-// 	type resp struct {
-// 		code int
-// 		body string
-// 	}
-// 	tests := []struct {
-// 		name    string
-// 		svc     svc
-// 		req     req
-// 		resp    resp
-// 		err     errHTTP
-// 		wantErr bool
-// 	}{
-// 		// {
-// 		// 	name: "Empty",
-// 		// 	svc: svc{
-// 		// 		err: &repository.EntityEmptyErr{Name: "User"},
-// 		// 	},
-// 		// 	wantErr: true,
-// 		// },
-// 		{
-// 			name: "Created",
-// 			svc: svc{
-// 				args: entity.User{
-// 					FirstName: "foo",
-// 					LastName:  "baz",
-// 					Email:     "foo@example.com",
-// 					Username:  "foouser",
-// 					Passwd:    "foopasswd",
-// 				},
-// 				err: nil,
-// 			},
-// 			req: req{
-// 				payload: `{"first_name": "foo","last_name": "baz","email": "foo@example.com", "username": "foouser","password": "foopasswd"}`,
-// 			},
-// 			wantErr: false,
-// 		},
-// 	}
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			mock := mocks.NewUserService(t)
-// 			mock.On("Add", tt.svc.dto).Return(tt.svc.err)
-// 			// ctrl := NewUserController(mock)
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
 
-// 			// ts := httptest.NewServer(http.HandlerFunc(ctrl.add))
-// 			// defer ts.Close()
+func TestUserControlller_create(t *testing.T) {
+	type svc struct {
+		args entity.User
+		err  error
+	}
+	type req struct {
+		payload string
+	}
+	type res struct {
+		code int
+		body string
+	}
+	tests := []struct {
+		name    string
+		svc     svc
+		req     req
+		res     res
+		err     errHTTP
+		wantErr bool
+	}{
+		{
+			name: "Empty",
+			svc: svc{
+				args: entity.User{},
+				err:  nil,
+			},
+			req: req{
+				payload: "",
+			},
+			res: res{
+				code: http.StatusUnsupportedMediaType,
+			},
+			err: errHTTP{
+				Code:    http.StatusUnsupportedMediaType,
+				Status:  ctrlPayloadErrStatus,
+				Message: "invalid payload: EOF",
+			},
+			wantErr: true,
+		},
+		{
+			name: "Bad JSON",
+			req: req{
+				payload: `{"first_name": "foo","last_name": "baz","username": "foouser"`,
+			},
+			res: res{
+				code: http.StatusUnsupportedMediaType,
+			},
+			err: errHTTP{
+				Code:    http.StatusUnsupportedMediaType,
+				Status:  ctrlPayloadErrStatus,
+				Message: "invalid payload: unexpected EOF",
+			},
+			wantErr: true,
+		},
+		{
+			name: "Created",
+			svc: svc{
+				args: entity.User{
+					FirstName: "foo",
+					LastName:  "baz",
+					Email:     "foo@example.com",
+					Username:  "foouser",
+					Passwd:    "foopasswd",
+				},
+				err: nil,
+			},
+			req: req{
+				payload: `{"first_name": "foo","last_name": "baz","email": "foo@example.com", "username": "foouser","password": "foopasswd"}`,
+			},
+			res: res{
+				code: http.StatusCreated,
+				body: "{\"message\":\"user created successfully\"}\n",
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mock := &mocks.UserService{}
+			mock.On("Create", tt.svc.args).Return(tt.svc.err)
+			ctrl := NewUserController(mock)
 
-// 			// res, err := http.Post(ts.URL, "application/json", bytes.NewBuffer([]byte(tt.req.payload)))
-// 			// require.Nil(t, err)
+			req := httptest.NewRequest(http.MethodPost, "/users", bytes.NewBuffer([]byte(tt.req.payload)))
+			rec := httptest.NewRecorder()
 
-// 			// t.Logf("Code: %v", res.StatusCode)
-// 			// t.Logf("Body: %s", res.Body)
+			ctrl.create(rec, req)
 
-// 			// res.Body.Close()
-// 			// if err != nil {
-// 			// 	t.Fatal(err)
-// 			// }
+			assert.Equal(t, rec.Code, tt.res.code)
+			if tt.wantErr {
+				var errMsg errHTTP
+				require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &errMsg))
+				assert.Equal(t, tt.err, errMsg)
+				return
+			}
+			assert.Equal(t, tt.res.body, rec.Body.String())
+		})
+	}
+}
 
-// 			// req := httptest.NewRequest(http.MethodPost, "/users", bytes.NewBuffer([]byte(tt.req.payload)))
-// 			// rec := httptest.NewRecorder()
-// 			// r := chi.NewRouter()
-// 			// r.Post("/users", ctrl.add)
-// 			// r.ServeHTTP(rec, req)
+func TestUserController_get(t *testing.T) {
+	type svcArgs struct {
+		id uint64
+	}
+	type svcRes struct {
+		user entity.User
+		err  error
+	}
+	type svc struct {
+		args svcArgs
+		res  svcRes
+	}
+	type param struct {
+		id string
+	}
+	type res struct {
+		code int
+		body string
+	}
+	tests := []struct {
+		name    string
+		svc     svc
+		param   param
+		res     res
+		err     errHTTP
+		wantErr bool
+	}{
+		{
+			name: "Empty",
+			svc: svc{
+				args: svcArgs{id: 0},
+				res: svcRes{
+					user: entity.User{},
+					err:  nil,
+				},
+			},
+			param: param{
+				id: "",
+			},
+			res: res{
+				code: http.StatusBadRequest,
+			},
+			err: errHTTP{
+				Code:    http.StatusBadRequest,
+				Status:  ctrlParameterErrStatus,
+				Message: "invalid id parameter: empty value",
+			},
+			wantErr: true,
+		},
+		{
+			name: "Invalid ID",
+			svc: svc{
+				args: svcArgs{id: 0},
+				res: svcRes{
+					user: entity.User{},
+					err:  nil,
+				},
+			},
+			param: param{
+				id: "badid",
+			},
+			res: res{
+				code: http.StatusBadRequest,
+			},
+			err: errHTTP{
+				Code:    http.StatusBadRequest,
+				Status:  ctrlParameterErrStatus,
+				Message: "invalid id parameter: strconv.ParseUint: parsing \"badid\": invalid syntax",
+			},
+			wantErr: true,
+		},
+		{
+			name: "Valid",
+			svc: svc{
+				args: svcArgs{id: 1},
+				res: svcRes{
+					user: entity.User{
+						ID:        1,
+						FirstName: "foo",
+						LastName:  "baz",
+					},
+					err: nil,
+				},
+			},
+			param: param{
+				id: "1",
+			},
+			res: res{
+				code: http.StatusOK,
+				body: "{\"ID\":1,\"FirstName\":\"foo\",\"LastName\":\"baz\",\"Email\":\"\",\"BirthDay\":\"0001-01-01T00:00:00Z\",\"Username\":\"\",\"Passwd\":\"\",\"Active\":false,\"LastLogin\":{\"Time\":\"0001-01-01T00:00:00Z\",\"Valid\":false},\"CreatedAt\":\"0001-01-01T00:00:00Z\",\"UpdatedAt\":{\"Time\":\"0001-01-01T00:00:00Z\",\"Valid\":false}}\n",
+			},
+			err:     errHTTP{},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// mock := mocks.NewUserService(t)
+			mock := &mocks.UserService{}
+			mock.On("Get", tt.svc.args.id).Return(tt.svc.res.user, tt.svc.res.err)
+			ctrl := NewUserController(mock)
 
-// 			// t.Logf("Code: %v", rec.Code)
-// 			// t.Logf("Body: %s", rec.Body)
+			req := httptest.NewRequest(http.MethodGet, "/users?id="+tt.param.id, nil)
+			rec := httptest.NewRecorder()
 
-// 			// if tt.wantErr {
-// 			// require.NotNil(t, err)
-// 			// assert.ErrorIs(t, err, tt.err)
-// 			// return
-// 			// }
-// 			// assert.Equal(t, tt.resp.code, ts.Code)
-// 			// assert.Equal(t, tt.resp.body, rec.Body.String())
-// 		})
-// 	}
-// }
+			ctrl.get(rec, req)
 
-// // func TestUserCtrl_get(t *testing.T) {
-// // 	type fields struct {
-// // 		svc svc.UserService
-// // 	}
-// // 	type args struct {
-// // 		c echo.Context
-// // 	}
-// // 	tests := []struct {
-// // 		name    string
-// // 		fields  fields
-// // 		args    args
-// // 		wantErr bool
-// // 	}{
-// // 		// TODO: Add test cases.
-// // 	}
-// // 	for _, tt := range tests {
-// // 		t.Run(tt.name, func(t *testing.T) {
-// // 			uc := UserCtrl{
-// // 				svc: tt.fields.svc,
-// // 			}
-// // 			if err := uc.get(tt.args.c); (err != nil) != tt.wantErr {
-// // 				t.Errorf("UserCtrl.get() error = %v, wantErr %v", err, tt.wantErr)
-// // 			}
-// // 		})
-// // 	}
-// // }
-
-// // func TestUserCtrl_getFiltered(t *testing.T) {
-// // 	type fields struct {
-// // 		svc svc.UserService
-// // 	}
-// // 	type args struct {
-// // 		c echo.Context
-// // 	}
-// // 	tests := []struct {
-// // 		name    string
-// // 		fields  fields
-// // 		args    args
-// // 		wantErr bool
-// // 	}{
-// // 		// TODO: Add test cases.
-// // 	}
-// // 	for _, tt := range tests {
-// // 		t.Run(tt.name, func(t *testing.T) {
-// // 			uc := UserCtrl{
-// // 				svc: tt.fields.svc,
-// // 			}
-// // 			if err := uc.getFiltered(tt.args.c); (err != nil) != tt.wantErr {
-// // 				t.Errorf("UserCtrl.getFiltered() error = %v, wantErr %v", err, tt.wantErr)
-// // 			}
-// // 		})
-// // 	}
-// // }
-
-// // func TestUserCtrl_update(t *testing.T) {
-// // 	type fields struct {
-// // 		svc svc.UserService
-// // 	}
-// // 	type args struct {
-// // 		c echo.Context
-// // 	}
-// // 	tests := []struct {
-// // 		name    string
-// // 		fields  fields
-// // 		args    args
-// // 		wantErr bool
-// // 	}{
-// // 		// TODO: Add test cases.
-// // 	}
-// // 	for _, tt := range tests {
-// // 		t.Run(tt.name, func(t *testing.T) {
-// // 			uc := UserCtrl{
-// // 				svc: tt.fields.svc,
-// // 			}
-// // 			if err := uc.update(tt.args.c); (err != nil) != tt.wantErr {
-// // 				t.Errorf("UserCtrl.update() error = %v, wantErr %v", err, tt.wantErr)
-// // 			}
-// // 		})
-// // 	}
-// // }
-
-// // func TestUserCtrl_delete(t *testing.T) {
-// // 	type fields struct {
-// // 		svc svc.UserService
-// // 	}
-// // 	type args struct {
-// // 		c echo.Context
-// // 	}
-// // 	tests := []struct {
-// // 		name    string
-// // 		fields  fields
-// // 		args    args
-// // 		wantErr bool
-// // 	}{
-// // 		// TODO: Add test cases.
-// // 	}
-// // 	for _, tt := range tests {
-// // 		t.Run(tt.name, func(t *testing.T) {
-// // 			uc := UserCtrl{
-// // 				svc: tt.fields.svc,
-// // 			}
-// // 			if err := uc.delete(tt.args.c); (err != nil) != tt.wantErr {
-// // 				t.Errorf("UserCtrl.delete() error = %v, wantErr %v", err, tt.wantErr)
-// // 			}
-// // 		})
-// // 	}
-// // }
-
-// // func TestUserCtrl_login(t *testing.T) {
-// // 	type fields struct {
-// // 		svc svc.UserService
-// // 	}
-// // 	type args struct {
-// // 		c echo.Context
-// // 	}
-// // 	tests := []struct {
-// // 		name    string
-// // 		fields  fields
-// // 		args    args
-// // 		wantErr bool
-// // 	}{
-// // 		// TODO: Add test cases.
-// // 	}
-// // 	for _, tt := range tests {
-// // 		t.Run(tt.name, func(t *testing.T) {
-// // 			uc := UserCtrl{
-// // 				svc: tt.fields.svc,
-// // 			}
-// // 			if err := uc.login(tt.args.c); (err != nil) != tt.wantErr {
-// // 				t.Errorf("UserCtrl.login() error = %v, wantErr %v", err, tt.wantErr)
-// // 			}
-// // 		})
-// // 	}
-// // }
+			assert.Equal(t, rec.Code, tt.res.code)
+			if tt.wantErr {
+				var errMsg errHTTP
+				require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &errMsg))
+				assert.Equal(t, tt.err, errMsg)
+				return
+			}
+			assert.Equal(t, tt.res.body, rec.Body.String())
+		})
+	}
+}

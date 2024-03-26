@@ -77,17 +77,17 @@ func (uc UserController) create(w http.ResponseWriter, r *http.Request) {
 }
 
 func (uc UserController) get(w http.ResponseWriter, r *http.Request) {
-	idParam := chi.URLParam(r, "id")
-	if idParam == "" {
-		errJSON(w, r, ParameterErr{Param: "id", Err: "empty value"})
+	id := r.URL.Query().Get("id")
+	if id == "" {
+		errJSON(w, r, &ParameterErr{Param: "id", Err: "empty value"})
 		return
 	}
-	id, err := strconv.ParseUint(idParam, 10, 64)
+	idUint, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
-		errJSON(w, r, ParameterErr{Param: "id", Err: err.Error()})
+		errJSON(w, r, &ParameterErr{Param: "id", Err: err.Error()})
 		return
 	}
-	user, err := uc.svc.Get(id)
+	user, err := uc.svc.Get(idUint)
 	if err != nil {
 		errJSON(w, r, err)
 		return
@@ -107,12 +107,12 @@ func (uc UserController) getAll(w http.ResponseWriter, r *http.Request) {
 func (uc UserController) getFiltered(w http.ResponseWriter, r *http.Request) {
 	filter := chi.URLParam(r, "filter")
 	if filter == "" {
-		errJSON(w, r, ParameterErr{Param: "filter", Err: "filter empty"})
+		errJSON(w, r, &ParameterErr{Param: "filter", Err: "filter empty"})
 		return
 	}
 	value := chi.URLParam(r, "value")
 	if value == "" {
-		errJSON(w, r, ParameterErr{Param: "value", Err: "filter value empty"})
+		errJSON(w, r, &ParameterErr{Param: "value", Err: "filter value empty"})
 		return
 	}
 	users, err := uc.svc.Find(filter, value)
@@ -145,12 +145,12 @@ func (uc UserController) update(w http.ResponseWriter, r *http.Request) {
 func (uc UserController) delete(w http.ResponseWriter, r *http.Request) {
 	idParam := chi.URLParam(r, "id")
 	if idParam == "" {
-		errJSON(w, r, ParameterErr{Param: "id", Err: "empty value"})
+		errJSON(w, r, &ParameterErr{Param: "id", Err: "empty value"})
 		return
 	}
 	id, err := strconv.ParseUint(idParam, 10, 64)
 	if err != nil {
-		errJSON(w, r, ParameterErr{Param: "id", Err: err.Error()})
+		errJSON(w, r, &ParameterErr{Param: "id", Err: err.Error()})
 		return
 	}
 	if err := uc.svc.Delete(id); err != nil {
@@ -163,12 +163,12 @@ func (uc UserController) delete(w http.ResponseWriter, r *http.Request) {
 func (uc UserController) login(w http.ResponseWriter, r *http.Request) {
 	username := chi.URLParam(r, "username")
 	if username == "" {
-		errJSON(w, r, ParameterErr{Param: "username", Err: "empty value"})
+		errJSON(w, r, &ParameterErr{Param: "username", Err: "empty value"})
 		return
 	}
 	passwd := chi.URLParam(r, "passwd")
 	if passwd == "" {
-		errJSON(w, r, ParameterErr{Param: "password", Err: "empty value"})
+		errJSON(w, r, &ParameterErr{Param: "password", Err: "empty value"})
 		return
 	}
 	user, err := uc.svc.ValidateLogin(username, passwd)
