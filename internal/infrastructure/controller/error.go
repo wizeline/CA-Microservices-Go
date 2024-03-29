@@ -6,16 +6,17 @@ import (
 	"net/http"
 	"reflect"
 
-	"github.com/go-chi/render"
 	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/repository"
 	"github.com/wizeline/CA-Microservices-Go/internal/service"
+
+	"github.com/go-chi/render"
 )
 
 const (
-	repoErrStatus          errStatus = "RepositoryError"
-	svcErrStatus           errStatus = "ServiceError"
-	ctrlPayloadErrStatus   errStatus = "ControllerPayloadError"
-	ctrlParameterErrStatus errStatus = "ControllerParameterError"
+	repoErrStatus        errStatus = "RepositoryError"
+	svcErrStatus         errStatus = "ServiceError"
+	ctrlPayloadErrStatus errStatus = "ControllerPayloadError"
+	ctrlParamErrStatus   errStatus = "ControllerParameterError"
 )
 
 var _ fmt.Stringer = errStatus("")
@@ -51,7 +52,7 @@ func (e ParameterErr) Error() string {
 	return fmt.Sprintf("invalid %v parameter: %v", e.Param, e.Err)
 }
 
-// newErrHTTP is an HTTP error handler based on error types.
+// newErrHTTP returns a new HTTP error message based on error types.
 func newErrHTTP(err error) errHTTP {
 	var (
 		repoErr        *repository.Err
@@ -81,8 +82,8 @@ func newErrHTTP(err error) errHTTP {
 		// TODO: evaluate the rest of the service errors
 
 		return errHTTP{
-			Code:    http.StatusUnprocessableEntity,
-			Status:  ctrlPayloadErrStatus,
+			Code:    http.StatusBadRequest,
+			Status:  svcErrStatus,
 			Message: err.Error(),
 		}
 
@@ -93,7 +94,7 @@ func newErrHTTP(err error) errHTTP {
 	case errors.As(err, &ctrlParamErr):
 		return errHTTP{
 			Code:    http.StatusBadRequest,
-			Status:  ctrlParameterErrStatus,
+			Status:  ctrlParamErrStatus,
 			Message: err.Error(),
 		}
 
