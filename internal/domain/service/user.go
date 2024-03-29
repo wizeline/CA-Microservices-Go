@@ -16,5 +16,5 @@ type UserService interface {
 	ChangeEmail(id uint64, email string) error
 	ChangePasswd(id uint64, passwd string) error
 	IsActive(id uint64) (bool, error)
-	ValidateLogin(username string, password string) (entity.User, error)
+	ValidateLogin(username string, passwd string) (entity.User, error)
 }
