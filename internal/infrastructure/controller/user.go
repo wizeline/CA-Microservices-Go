@@ -10,8 +10,11 @@ import (
 	"github.com/wizeline/CA-Microservices-Go/internal/domain/entity"
 	"github.com/wizeline/CA-Microservices-Go/internal/domain/service"
 
+	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
 )
+
+var _ HTTP = &UserController{}
 
 // userCreateReq represents the data transfer object requested for creating a user.
 type userCreateReq struct {
@@ -63,6 +66,18 @@ func NewUserController(svc service.UserService) UserController {
 	return UserController{
 		svc: svc,
 	}
+}
+
+func (uc UserController) SetRoutes(r chi.Router) {
+	r.Post("/users", uc.create)
+	r.Get("/users/{id}", uc.get)
+	r.Get("/users", uc.getAll)
+	r.Get("/users/{filter}/{value}", uc.getFiltered)
+	r.Put("/users/{id}", uc.update)
+	r.Delete("/users/{id}", uc.update)
+
+	// TODO: migrate to a post method
+	r.Get("/login/{username}/{password}", uc.login)
 }
 
 func (uc UserController) create(w http.ResponseWriter, r *http.Request) {
