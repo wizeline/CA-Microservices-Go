@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/wizeline/CA-Microservices-Go/internal/domain/entity"
+	"github.com/wizeline/CA-Microservices-Go/internal/entity"
 	"github.com/wizeline/CA-Microservices-Go/internal/util"
 )
 

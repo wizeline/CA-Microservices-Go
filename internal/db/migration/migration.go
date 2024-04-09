@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/logger"
+	"github.com/wizeline/CA-Microservices-Go/internal/logger"
 )
 
 const migrationsDir = "internal/infrastructure/db/migration/v1"

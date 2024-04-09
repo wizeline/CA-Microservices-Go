@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"reflect"
 
-	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/repository"
+	"github.com/wizeline/CA-Microservices-Go/internal/repository"
 	"github.com/wizeline/CA-Microservices-Go/internal/service"
 
 	"github.com/go-chi/render"

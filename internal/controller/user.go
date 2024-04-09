@@ -7,8 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/wizeline/CA-Microservices-Go/internal/domain/entity"
-	"github.com/wizeline/CA-Microservices-Go/internal/domain/service"
+	"github.com/wizeline/CA-Microservices-Go/internal/entity"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
@@ -64,11 +63,26 @@ type userLoginResponse struct {
 	LastLogin string `json:"last_login"`
 }
 
-type UserController struct {
-	svc service.UserService
+type UserService interface {
+	Create(user entity.User) error
+	Get(id uint64) (entity.User, error)
+	GetAll() ([]entity.User, error)
+	Find(filter, value string) ([]entity.User, error)
+	Update(user entity.User) error
+	Delete(id uint64) error
+
+	Activate(id uint64) error
+	ChangeEmail(id uint64, email string) error
+	ChangePasswd(id uint64, passwd string) error
+	IsActive(id uint64) (bool, error)
+	ValidateLogin(username string, passwd string) (entity.User, error)
 }
 
-func NewUserController(svc service.UserService) UserController {
+type UserController struct {
+	svc UserService
+}
+
+func NewUserController(svc UserService) UserController {
 	return UserController{
 		svc: svc,
 	}
@@ -82,8 +96,7 @@ func (uc UserController) SetRoutes(r chi.Router) {
 	r.Put("/users/{id}", uc.update)
 	r.Delete("/users/{id}", uc.update)
 
-	// TODO: migrate to a post method
-	r.Get("/login/{username}/{password}", uc.login)
+	r.Post("/login", uc.login)
 }
 
 func (uc UserController) create(w http.ResponseWriter, r *http.Request) {

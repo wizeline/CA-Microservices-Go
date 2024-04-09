@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/wizeline/CA-Microservices-Go/internal/domain/entity"
-	"github.com/wizeline/CA-Microservices-Go/internal/domain/service/mocks"
-	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/repository"
+	"github.com/wizeline/CA-Microservices-Go/internal/controller/mocks"
+	"github.com/wizeline/CA-Microservices-Go/internal/entity"
+	"github.com/wizeline/CA-Microservices-Go/internal/repository"
 	"github.com/wizeline/CA-Microservices-Go/internal/service"
 
 	"github.com/stretchr/testify/assert"

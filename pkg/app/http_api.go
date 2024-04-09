@@ -8,13 +8,13 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/config"
-	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/controller"
-	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/db"
-	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/db/migration"
-	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/logger"
-	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/repository"
-	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/router"
+	"github.com/wizeline/CA-Microservices-Go/internal/config"
+	"github.com/wizeline/CA-Microservices-Go/internal/controller"
+	"github.com/wizeline/CA-Microservices-Go/internal/db"
+	"github.com/wizeline/CA-Microservices-Go/internal/db/migration"
+	"github.com/wizeline/CA-Microservices-Go/internal/logger"
+	"github.com/wizeline/CA-Microservices-Go/internal/repository"
+	"github.com/wizeline/CA-Microservices-Go/internal/router"
 	"github.com/wizeline/CA-Microservices-Go/internal/service"
 )
 

@@ -3,12 +3,8 @@ package repository
 import (
 	"database/sql"
 
-	"github.com/wizeline/CA-Microservices-Go/internal/domain/entity"
-	repo "github.com/wizeline/CA-Microservices-Go/internal/domain/repository"
+	"github.com/wizeline/CA-Microservices-Go/internal/entity"
 )
-
-// We ensure the UserRepositoryPg implementation satisfies the UserRepository signature in the domain
-var _ repo.UserRepository = &UserRepoPg{}
 
 type UserRepoPg struct {
 	db *sql.DB

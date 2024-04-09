@@ -6,7 +6,7 @@ import (
 	"log"
 
 	_ "github.com/lib/pq"
-	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/config"
+	"github.com/wizeline/CA-Microservices-Go/internal/config"
 )
 
 // PgConn handles the PostgreSQL database connection.
