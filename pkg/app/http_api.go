@@ -1,57 +1,100 @@
 package app
 
 import (
+	"context"
+	"errors"
+	"net/http"
+	"os"
+	"os/signal"
+	"time"
+
 	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/config"
 	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/controller"
 	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/db"
 	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/db/migration"
 	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/logger"
 	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/repository"
+	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/router"
 	"github.com/wizeline/CA-Microservices-Go/internal/service"
 )
 
 type ApiHTTP struct {
-	cfg    config.Config
+	cfg    config.HTTPServer
+	dbConn *db.PgConn
+	server *http.Server
 	logger logger.ZeroLog
 }
 
-func NewApiHTTP(cfg config.Config, l logger.ZeroLog) (ApiHTTP, func(), error) {
+func NewApiHTTP(cfg config.Config, l logger.ZeroLog) (ApiHTTP, error) {
 
 	// Initialize database connection
-	conn, err := db.NewPgConn(cfg.Database.Postgres)
+	dbConn, err := db.NewPgConn(cfg.Database.Postgres)
 	if err != nil {
-		return ApiHTTP{}, nil, err
+		return ApiHTTP{}, err
 	}
 	l.Log().Debug().Msg("database connection ready")
 
 	// Run Migrations
-	err = migration.Run(conn.DB(), []migration.Migration{
+	err = migration.Run(dbConn.DB(), []migration.Migration{
 		migration.CreateUsersTable,
 	}, l)
 	if err != nil {
-		return ApiHTTP{}, nil, err
+		return ApiHTTP{}, err
 	}
 
-	// Clean Architecture
-	userRepo := repository.NewUserRepoPg(conn.DB())
+	// User dependencies
+	userRepo := repository.NewUserRepoPg(dbConn.DB())
 	userSvc := service.NewUserService(userRepo, l)
-	_ = controller.NewUserController(userSvc)
 
-	// TODO: imeplement the rest of application setup and start
-	// - Router
-	// - HttpServer
+	// Router
+	r := router.NewChi(cfg.Application, l)
+	r.Add(controller.NewHealthCheck(), controller.NewUserController(userSvc))
+	r.RegisterRoutes()
 
 	return ApiHTTP{
-			cfg:    cfg,
-			logger: l,
-		}, func() {
-			if err := conn.Close(); err != nil {
-				l.Log().Err(err).Msg("failed closing database connection")
-			}
-		}, nil
+		cfg:    cfg.HTTPServer,
+		dbConn: dbConn,
+		server: &http.Server{
+			Handler:      r.Router(),
+			Addr:         cfg.HTTPServer.Address(),
+			WriteTimeout: 15 * time.Second,
+			ReadTimeout:  15 * time.Second,
+			IdleTimeout:  time.Second * 60,
+		},
+		logger: l,
+	}, nil
 
 }
 
+// Start runs the http API and quits doing a grateful shutdown.
+// To stop the server you must send a syscall.SIGINT signal usually through `CTRL+C`.
 func (h ApiHTTP) Start() {
-	h.logger.Log().Warn().Msg("http api start not implemented")
+	go func() {
+		h.logger.Log().Info().Msgf("running http server on %v", h.cfg.Address())
+		err := h.server.ListenAndServe()
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			h.logger.Log().Fatal().Err(err).Msg("http server startup failed")
+		}
+	}()
+
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt)
+	<-quit
+}
+
+// Shutdown performs tasks of safely shutting down processes and closing connections.
+func (h ApiHTTP) Shutdown() {
+	ctx, cancel := context.WithTimeout(context.Background(), h.cfg.ShutdownTimeout())
+	defer cancel()
+
+	if err := h.server.Shutdown(ctx); err != nil {
+		h.logger.Log().Error().Err(err).Msg("http server graceful shutdown failed")
+	}
+
+	if err := h.dbConn.Close(); err != nil {
+		h.logger.Log().Err(err).Msg("failed closing database connection")
+	}
+
+	h.logger.Log().Info().Msg("http api shutdown gracefully")
+	os.Exit(0)
 }

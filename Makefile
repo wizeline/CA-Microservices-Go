@@ -4,8 +4,10 @@ export $(shell sed 's/=.*//' deployments/.env)
 
 help:
 	@echo "Available targets:"
-	@echo "  postgres   - Start PostgreSQL container"
+	@echo "  pgdb   - Start PostgreSQL container"
+	@echo "  pgdb-stop   - Stop PostgreSQL container"
 	@echo "  pgadmin    - Start pgAdmin container"
+	@echo "  pgadmin-stop    - Stop pgAdmin container"
 	@echo "  clean      - Stop and remove containers"
 
 # Create Network for application
