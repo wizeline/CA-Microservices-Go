@@ -1,21 +1,23 @@
 package service
 
 import (
-	"github.com/wizeline/CA-Microservices-Go/internal/domain/entity"
-	repo "github.com/wizeline/CA-Microservices-Go/internal/domain/repository"
-	svc "github.com/wizeline/CA-Microservices-Go/internal/domain/service"
-
-	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/logger"
+	"github.com/wizeline/CA-Microservices-Go/internal/entity"
+	"github.com/wizeline/CA-Microservices-Go/internal/logger"
 )
 
-// We ensure the UserService implementation satisfies the UserService signature in the domain
-var _ svc.UserService = &UserService{}
-
-type UserService struct {
-	repo repo.UserRepository
+type UserRepo interface {
+	Create(user entity.User) error
+	Read(id int) (entity.User, error)
+	ReadAll() ([]entity.User, error)
+	Update(user entity.User) error
+	Delete(id int) error
 }
 
-func NewUserService(repo repo.UserRepository, l logger.ZeroLog) UserService {
+type UserService struct {
+	repo UserRepo
+}
+
+func NewUserService(repo UserRepo, l logger.ZeroLog) UserService {
 	return UserService{
 		repo: repo,
 	}

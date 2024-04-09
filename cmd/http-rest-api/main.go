@@ -3,8 +3,8 @@ package main
 import (
 	"os"
 
-	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/config"
-	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/logger"
+	"github.com/wizeline/CA-Microservices-Go/internal/config"
+	"github.com/wizeline/CA-Microservices-Go/internal/logger"
 	"github.com/wizeline/CA-Microservices-Go/pkg/app"
 )
 

@@ -8,13 +8,13 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/config"
-	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/controller"
-	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/db"
-	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/db/migration"
-	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/logger"
-	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/repository"
-	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/router"
+	"github.com/wizeline/CA-Microservices-Go/internal/config"
+	"github.com/wizeline/CA-Microservices-Go/internal/controller"
+	"github.com/wizeline/CA-Microservices-Go/internal/db"
+	"github.com/wizeline/CA-Microservices-Go/internal/db/migration"
+	"github.com/wizeline/CA-Microservices-Go/internal/logger"
+	"github.com/wizeline/CA-Microservices-Go/internal/repository"
+	"github.com/wizeline/CA-Microservices-Go/internal/router"
 	"github.com/wizeline/CA-Microservices-Go/internal/service"
 )
 
@@ -43,12 +43,16 @@ func NewApiHTTP(cfg config.Config, l logger.ZeroLog) (ApiHTTP, error) {
 	}
 
 	// User dependencies
-	userRepo := repository.NewUserRepoPg(dbConn.DB())
+	userRepo := repository.NewUserRepositoryPg(dbConn.DB())
 	userSvc := service.NewUserService(userRepo, l)
+	userCtrl := controller.NewUserController(userSvc)
 
 	// Router
 	r := router.NewChi(cfg.Application, l)
-	r.Add(controller.NewHealthCheck(), controller.NewUserController(userSvc))
+	r.Add(
+		controller.NewHealthCheck(),
+		userCtrl,
+	)
 	r.RegisterRoutes()
 
 	return ApiHTTP{

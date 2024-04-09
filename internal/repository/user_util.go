@@ -1,7 +1,7 @@
 package repository
 
 import (
-	"github.com/wizeline/CA-Microservices-Go/internal/domain/entity"
+	"github.com/wizeline/CA-Microservices-Go/internal/entity"
 	"github.com/wizeline/CA-Microservices-Go/internal/util"
 
 	"golang.org/x/crypto/bcrypt"

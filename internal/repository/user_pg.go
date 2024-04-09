@@ -3,24 +3,20 @@ package repository
 import (
 	"database/sql"
 
-	"github.com/wizeline/CA-Microservices-Go/internal/domain/entity"
-	repo "github.com/wizeline/CA-Microservices-Go/internal/domain/repository"
+	"github.com/wizeline/CA-Microservices-Go/internal/entity"
 )
 
-// We ensure the UserRepositoryPg implementation satisfies the UserRepository signature in the domain
-var _ repo.UserRepository = &UserRepoPg{}
-
-type UserRepoPg struct {
+type UserRepositoryPg struct {
 	db *sql.DB
 }
 
-func NewUserRepoPg(db *sql.DB) UserRepoPg {
-	return UserRepoPg{
+func NewUserRepositoryPg(db *sql.DB) UserRepositoryPg {
+	return UserRepositoryPg{
 		db: db,
 	}
 }
 
-func (r UserRepoPg) Create(user entity.User) error {
+func (r UserRepositoryPg) Create(user entity.User) error {
 	if err := validateUser(user); err != nil {
 		return err
 	}
@@ -38,7 +34,7 @@ func (r UserRepoPg) Create(user entity.User) error {
 	return nil
 }
 
-func (r UserRepoPg) Read(id int) (entity.User, error) {
+func (r UserRepositoryPg) Read(id int) (entity.User, error) {
 	var user entity.User
 	row := r.db.QueryRow(`
 		SELECT id, first_name, last_name, email, birthday,
@@ -56,7 +52,7 @@ func (r UserRepoPg) Read(id int) (entity.User, error) {
 	return user, nil
 }
 
-func (r UserRepoPg) ReadAll() ([]entity.User, error) {
+func (r UserRepositoryPg) ReadAll() ([]entity.User, error) {
 	rows, err := r.db.Query(`
 	SELECT id, first_name, last_name, email, birthday, 
 		username, passwd, active, last_login,
@@ -88,7 +84,7 @@ func (r UserRepoPg) ReadAll() ([]entity.User, error) {
 	return users, nil
 }
 
-func (r UserRepoPg) Update(user entity.User) error {
+func (r UserRepositoryPg) Update(user entity.User) error {
 	if err := validateUser(user); err != nil {
 		return err
 	}
@@ -117,7 +113,7 @@ func (r UserRepoPg) Update(user entity.User) error {
 	return err
 }
 
-func (r UserRepoPg) Delete(id int) error {
+func (r UserRepositoryPg) Delete(id int) error {
 	_, err := r.db.Exec("DELETE FROM users WHERE id = $1", id)
 	return err
 }

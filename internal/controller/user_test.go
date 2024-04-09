@@ -10,14 +10,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/wizeline/CA-Microservices-Go/internal/domain/entity"
-	"github.com/wizeline/CA-Microservices-Go/internal/domain/service/mocks"
-	"github.com/wizeline/CA-Microservices-Go/internal/infrastructure/repository"
+	"github.com/wizeline/CA-Microservices-Go/internal/controller/mocks"
+	"github.com/wizeline/CA-Microservices-Go/internal/entity"
+	"github.com/wizeline/CA-Microservices-Go/internal/repository"
 	"github.com/wizeline/CA-Microservices-Go/internal/service"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+// We ensure the UserSvc mock object satisfies the UserSvc signature.
+var _ UserSvc = &mocks.UserSvc{}
 
 func TestUserControlller_create(t *testing.T) {
 	type svcArgs struct {
@@ -105,7 +108,7 @@ func TestUserControlller_create(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mock := &mocks.UserService{}
+			mock := &mocks.UserSvc{}
 			mock.On("Create", tt.svc.args.user).Return(tt.svc.resp.err)
 			ctrl := NewUserController(mock)
 
@@ -222,7 +225,7 @@ func TestUserController_get(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mock := &mocks.UserService{}
+			mock := &mocks.UserSvc{}
 			mock.On("Get", tt.svc.args.id).Return(tt.svc.resp.user, tt.svc.resp.err)
 			ctrl := NewUserController(mock)
 
@@ -332,7 +335,7 @@ func TestUserController_getAll(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mock := &mocks.UserService{}
+			mock := &mocks.UserSvc{}
 			mock.On("GetAll").Return(tt.svc.resp.users, tt.svc.resp.err)
 			ctrl := NewUserController(mock)
 
@@ -501,7 +504,7 @@ func TestUserController_getFiltered(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mock := &mocks.UserService{}
+			mock := &mocks.UserSvc{}
 			mock.On("Find", tt.svc.args.filter, tt.svc.args.value).Return(tt.svc.resp.users, tt.svc.resp.err)
 			ctrl := NewUserController(mock)
 
@@ -623,7 +626,7 @@ func TestUserControlller_update(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mock := &mocks.UserService{}
+			mock := &mocks.UserSvc{}
 			mock.On("Update", tt.svc.args.user).Return(tt.svc.resp.err)
 			ctrl := NewUserController(mock)
 
@@ -738,7 +741,7 @@ func TestUserControlller_delete(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mock := &mocks.UserService{}
+			mock := &mocks.UserSvc{}
 			mock.On("Delete", tt.svc.args.id).Return(tt.svc.resp.err)
 			ctrl := NewUserController(mock)
 
@@ -892,7 +895,7 @@ func TestUserControlller_login(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mock := &mocks.UserService{}
+			mock := &mocks.UserSvc{}
 			mock.On("ValidateLogin", tt.svc.args.username, tt.svc.args.passwd).Return(tt.svc.resp.user, tt.svc.resp.err)
 			ctrl := NewUserController(mock)
 
