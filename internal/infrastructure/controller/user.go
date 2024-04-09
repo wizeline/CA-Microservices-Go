@@ -10,8 +10,11 @@ import (
 	"github.com/wizeline/CA-Microservices-Go/internal/domain/entity"
 	"github.com/wizeline/CA-Microservices-Go/internal/domain/service"
 
+	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
 )
+
+var _ HTTP = &UserController{}
 
 // userCreateReq represents the data transfer object requested for creating a user.
 type userCreateReq struct {
@@ -45,6 +48,12 @@ type userResponse struct {
 	UpdatedAt string `json:"updated_at"`
 }
 
+// userLoginReq represents the data transfer object requested for login a user.
+type userLoginReq struct {
+	Username string `json:"username"`
+	Passwd   string `json:"password"`
+}
+
 // userLoginResponse represents the data transfer object response for a logged user.
 type userLoginResponse struct {
 	ID        string `json:"id"`
@@ -63,6 +72,18 @@ func NewUserController(svc service.UserService) UserController {
 	return UserController{
 		svc: svc,
 	}
+}
+
+func (uc UserController) SetRoutes(r chi.Router) {
+	r.Post("/users", uc.create)
+	r.Get("/users/{id}", uc.get)
+	r.Get("/users", uc.getAll)
+	r.Get("/users/{filter}/{value}", uc.getFiltered)
+	r.Put("/users/{id}", uc.update)
+	r.Delete("/users/{id}", uc.update)
+
+	// TODO: migrate to a post method
+	r.Get("/login/{username}/{password}", uc.login)
 }
 
 func (uc UserController) create(w http.ResponseWriter, r *http.Request) {
@@ -204,17 +225,13 @@ func (uc UserController) delete(w http.ResponseWriter, r *http.Request) {
 }
 
 func (uc UserController) login(w http.ResponseWriter, r *http.Request) {
-	username := r.URL.Query().Get("username")
-	if username == "" {
-		errJSON(w, r, &ParameterErr{Param: "username", Err: "empty value"})
+	var dto userLoginReq
+	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
+		errJSON(w, r, &PayloadErr{err})
 		return
 	}
-	passwd := r.URL.Query().Get("password")
-	if passwd == "" {
-		errJSON(w, r, &ParameterErr{Param: "password", Err: "empty value"})
-		return
-	}
-	user, err := uc.svc.ValidateLogin(username, passwd)
+
+	user, err := uc.svc.ValidateLogin(dto.Username, dto.Passwd)
 	if err != nil {
 		errJSON(w, r, err)
 		return

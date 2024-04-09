@@ -12,12 +12,12 @@ func main() {
 	l := logger.NewZeroLog()
 	cfg := config.NewConfig()
 
-	api, clean, err := app.NewApiHTTP(cfg, l)
+	api, err := app.NewApiHTTP(cfg, l)
 	if err != nil {
 		l.Log().Err(err).Msg("http rest api startup failed")
 		os.Exit(1)
 	}
-	defer clean()
+	defer api.Shutdown()
 
 	api.Start()
 }
