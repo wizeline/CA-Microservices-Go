@@ -63,7 +63,7 @@ type userLoginResponse struct {
 	LastLogin string `json:"last_login"`
 }
 
-type UserService interface {
+type UserSvc interface {
 	Create(user entity.User) error
 	Get(id uint64) (entity.User, error)
 	GetAll() ([]entity.User, error)
@@ -79,10 +79,10 @@ type UserService interface {
 }
 
 type UserController struct {
-	svc UserService
+	svc UserSvc
 }
 
-func NewUserController(svc UserService) UserController {
+func NewUserController(svc UserSvc) UserController {
 	return UserController{
 		svc: svc,
 	}

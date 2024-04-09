@@ -5,7 +5,7 @@ import (
 	"github.com/wizeline/CA-Microservices-Go/internal/logger"
 )
 
-type UserRepository interface {
+type UserRepo interface {
 	Create(user entity.User) error
 	Read(id int) (entity.User, error)
 	ReadAll() ([]entity.User, error)
@@ -14,10 +14,10 @@ type UserRepository interface {
 }
 
 type UserService struct {
-	repo UserRepository
+	repo UserRepo
 }
 
-func NewUserService(repo UserRepository, l logger.ZeroLog) UserService {
+func NewUserService(repo UserRepo, l logger.ZeroLog) UserService {
 	return UserService{
 		repo: repo,
 	}

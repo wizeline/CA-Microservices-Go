@@ -76,5 +76,5 @@ pgadmin-clean: pgadmin-rm
 
 # Generate mock objects
 mocks:
-	mockery --name=UserRepository --srcpkg=./internal/service --output=./internal/service/mocks
-	mockery --name=UserService --srcpkg=./internal/controller --output=./internal/controller/mocks
+	mockery --name=UserRepo --srcpkg=./internal/service --output=./internal/service/mocks
+	mockery --name=UserSvc --srcpkg=./internal/controller --output=./internal/controller/mocks
