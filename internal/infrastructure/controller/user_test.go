@@ -759,7 +759,7 @@ func TestUserControlller_delete(t *testing.T) {
 	}
 }
 
-func TestUserController_login(t *testing.T) {
+func TestUserControlller_login(t *testing.T) {
 	type svcArgs struct {
 		username string
 		passwd   string
@@ -781,66 +781,75 @@ func TestUserController_login(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Username empty",
-			svc: svc{
-				args: svcArgs{username: "", passwd: ""},
-				resp: svcResp{
-					err: nil,
-				},
-			},
+			name: "Payload Empty",
+			svc:  svc{},
 			req: httpRequestTest{
-				params: map[string]string{
-					"username": "",
-					"password": "somepasswd",
-				},
+				payload: []byte(""),
 			},
 			resp: httpResponseTest{
-				code: http.StatusBadRequest,
+				code: http.StatusUnsupportedMediaType,
 			},
 			err: errHTTP{
-				Code:    http.StatusBadRequest,
-				Status:  ctrlParamErrStatus,
-				Message: "invalid username parameter: empty value",
+				Code:    http.StatusUnsupportedMediaType,
+				Status:  ctrlPayloadErrStatus,
+				Message: "invalid payload: EOF",
 			},
 			wantErr: true,
 		},
 		{
-			name: "Password empty",
-			svc: svc{
-				args: svcArgs{username: "", passwd: ""},
-				resp: svcResp{
-					err: nil,
-				},
-			},
+			name: "Bad JSON",
 			req: httpRequestTest{
-				params: map[string]string{
-					"username": "foouser",
-					"password": "",
-				},
+				payload: []byte(`{"username": "foo","password": "some-password"`),
 			},
 			resp: httpResponseTest{
-				code: http.StatusBadRequest,
+				code: http.StatusUnsupportedMediaType,
 			},
 			err: errHTTP{
-				Code:    http.StatusBadRequest,
-				Status:  ctrlParamErrStatus,
-				Message: "invalid password parameter: empty value",
+				Code:    http.StatusUnsupportedMediaType,
+				Status:  ctrlPayloadErrStatus,
+				Message: "invalid payload: unexpected EOF",
 			},
 			wantErr: true,
 		},
 		{
-			name: "Service error",
+			name: "Repository Error",
 			svc: svc{
-				args: svcArgs{username: "foouser", passwd: "somepasswd"},
+				args: svcArgs{
+					username: "foo",
+					passwd:   "some-password",
+				},
 				resp: svcResp{
-					err: &service.Err{Err: errors.New("some svc error")},
+					user: entity.User{},
+					err:  &repository.Err{Err: errors.New("some repository error")},
 				},
 			},
 			req: httpRequestTest{
-				params: map[string]string{
-					"username": "foouser",
-					"password": "somepasswd",
+				payload: []byte(`{"username": "foo","password": "some-password"}`),
+			},
+			resp: httpResponseTest{
+				code: http.StatusInternalServerError,
+			},
+			err: errHTTP{
+				Code:    http.StatusInternalServerError,
+				Status:  repoErrStatus,
+				Message: "repository: some repository error",
+			},
+			wantErr: true,
+		},
+		{
+			name: "Service Error",
+			svc: svc{
+				args: svcArgs{
+					username: "foo",
+					passwd:   "some-password",
 				},
+				resp: svcResp{
+					user: entity.User{},
+					err:  &service.Err{Err: errors.New("some service error")},
+				},
+			},
+			req: httpRequestTest{
+				payload: []byte(`{"username": "foo","password": "some-password"}`),
 			},
 			resp: httpResponseTest{
 				code: http.StatusBadRequest,
@@ -848,46 +857,46 @@ func TestUserController_login(t *testing.T) {
 			err: errHTTP{
 				Code:    http.StatusBadRequest,
 				Status:  svcErrStatus,
-				Message: "service: some svc error",
+				Message: "service: some service error",
 			},
 			wantErr: true,
 		},
 		{
 			name: "Valid",
 			svc: svc{
-				args: svcArgs{username: "foouser", passwd: "somepasswd"},
+				args: svcArgs{
+					username: "foouser",
+					passwd:   "foopasswd",
+				},
 				resp: svcResp{
 					user: entity.User{
-						ID:        123,
 						FirstName: "foo",
+						LastName:  "baz",
+						Email:     "foo@example.com",
+						BirthDay:  time.Date(1990, time.December, 5, 0, 0, 0, 0, time.UTC),
 						Username:  "foouser",
+						Passwd:    "foopasswd",
 					},
 					err: nil,
 				},
 			},
 			req: httpRequestTest{
-				params: map[string]string{
-					"username": "foouser",
-					"password": "somepasswd",
-				},
+				payload: []byte(`{"username": "foouser","password": "foopasswd"}`),
 			},
 			resp: httpResponseTest{
 				code: http.StatusOK,
-				body: "{\"id\":\"123\",\"first_name\":\"foo\",\"last_name\":\"\",\"email\":\"\",\"username\":\"foouser\",\"last_login\":\"0001-01-01 00:00:00 +0000 UTC\"}\n",
+				body: "{\"id\":\"0\",\"first_name\":\"foo\",\"last_name\":\"baz\",\"email\":\"foo@example.com\",\"username\":\"foouser\",\"last_login\":\"0001-01-01 00:00:00 +0000 UTC\"}\n",
 			},
-			err:     errHTTP{},
 			wantErr: false,
 		},
 	}
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mock := &mocks.UserService{}
 			mock.On("ValidateLogin", tt.svc.args.username, tt.svc.args.passwd).Return(tt.svc.resp.user, tt.svc.resp.err)
 			ctrl := NewUserController(mock)
 
-			path := fmt.Sprintf("/login?username=%v&password=%v", tt.req.params["username"], tt.req.params["password"])
-			req := httptest.NewRequest(http.MethodGet, path, nil)
+			req := httptest.NewRequest(http.MethodPost, "/login", bytes.NewBuffer(tt.req.payload))
 			rec := httptest.NewRecorder()
 
 			ctrl.login(rec, req)
