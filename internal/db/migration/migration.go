@@ -9,7 +9,7 @@ import (
 	"github.com/wizeline/CA-Microservices-Go/internal/logger"
 )
 
-const migrationsDir = "internal/infrastructure/db/migration/v1"
+const migrationsDir = "./internal/db/migration/v1"
 
 type Migration struct {
 	name     string
