@@ -5,6 +5,8 @@ import (
 	"fmt"
 )
 
+var ErrInvalidPassword = errors.New("can't login, passwords doesn't match")
+
 type Err struct {
 	Err error
 }
@@ -32,5 +34,3 @@ type InvalidFilter struct {
 func (e InvalidFilter) Error() string {
 	return fmt.Sprintf("Invalid filter for search: %s", e.Filter)
 }
-
-var InvalidPassword = errors.New("Can't login, passwords doesn't match")

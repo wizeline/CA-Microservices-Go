@@ -1,9 +1,11 @@
 package service
 
 import (
+	"errors"
+	"slices"
+
 	"github.com/wizeline/CA-Microservices-Go/internal/entity"
 	"github.com/wizeline/CA-Microservices-Go/internal/logger"
-	"slices"
 )
 
 type UserRepo interface {
@@ -33,11 +35,7 @@ func (s UserService) Create(user entity.User) error {
 }
 
 func (s UserService) Get(id uint64) (entity.User, error) {
-	user, err := s.repo.Read(id)
-	if err != nil {
-		return entity.User{}, err
-	}
-	return user, nil
+	return s.repo.Read(id)
 }
 
 func (s UserService) GetAll() ([]entity.User, error) {
@@ -136,10 +134,16 @@ func (s UserService) ValidateLogin(username string, password string) (entity.Use
 	if err != nil {
 		return entity.User{}, err
 	}
+
+	if len(users) == 0 {
+		return entity.User{}, errors.New("user not found")
+	}
+
 	if users[0].Passwd == password {
 		return users[0], nil
 	}
-	return entity.User{}, InvalidPassword
+
+	return entity.User{}, ErrInvalidPassword
 }
 
 func (s UserService) validateUser(user entity.User) error {

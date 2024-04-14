@@ -1,14 +1,15 @@
 package service
 
 import (
+	"errors"
 	"testing"
 	"time"
 
-	"errors"
-	"github.com/stretchr/testify/assert"
 	"github.com/wizeline/CA-Microservices-Go/internal/entity"
 	"github.com/wizeline/CA-Microservices-Go/internal/logger"
-	mocks "github.com/wizeline/CA-Microservices-Go/internal/service/mocks"
+	"github.com/wizeline/CA-Microservices-Go/internal/service/mocks"
+
+	"github.com/stretchr/testify/assert"
 )
 
 // We ensure the UserRepo mock object satisfies the UserRepo signature.
@@ -883,7 +884,7 @@ func TestValidateLogin(t *testing.T) {
 			password: "pass567",
 			users:    users,
 			wantUser: entity.User{},
-			wantErr:  InvalidPassword,
+			wantErr:  ErrInvalidPassword,
 		},
 		{
 			name:     "Repository error",
