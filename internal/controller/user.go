@@ -90,11 +90,11 @@ func NewUserController(svc UserSvc) UserController {
 
 func (uc UserController) SetRoutes(r chi.Router) {
 	r.Post("/users", uc.create)
-	r.Get("/users/{id}", uc.get)
+	r.Get("/user", uc.get)
 	r.Get("/users", uc.getAll)
-	r.Get("/users/{filter}/{value}", uc.getFiltered)
-	r.Put("/users/{id}", uc.update)
-	r.Delete("/users/{id}", uc.update)
+	r.Get("/users/filter", uc.getFiltered)
+	r.Put("/users", uc.update)
+	r.Delete("/users", uc.delete)
 
 	r.Post("/login", uc.login)
 }
