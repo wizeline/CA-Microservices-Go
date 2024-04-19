@@ -3,8 +3,6 @@ package repository
 import (
 	"github.com/wizeline/CA-Microservices-Go/internal/entity"
 	"github.com/wizeline/CA-Microservices-Go/internal/util"
-
-	"golang.org/x/crypto/bcrypt"
 )
 
 func validateUser(user entity.User) error {
@@ -28,13 +26,4 @@ func validateUser(user entity.User) error {
 	}
 
 	return nil
-}
-
-// hashPassword generates a hashed version of the password using bcrypt
-func hashPassword(passwd string) (string, error) {
-	hashedPasswd, err := bcrypt.GenerateFromPassword([]byte(passwd), bcrypt.DefaultCost)
-	if err != nil {
-		return "", err
-	}
-	return string(hashedPasswd), nil
 }

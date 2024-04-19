@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/wizeline/CA-Microservices-Go/internal/entity"
+	"github.com/wizeline/CA-Microservices-Go/internal/service"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
@@ -68,7 +69,7 @@ type UserSvc interface {
 	Get(id uint64) (entity.User, error)
 	GetAll() ([]entity.User, error)
 	Find(filter, value string) ([]entity.User, error)
-	Update(user entity.User) error
+	Update(args service.UpdateArgs) error
 	Delete(id uint64) error
 
 	Activate(id uint64) error
@@ -204,19 +205,17 @@ func (uc UserController) update(w http.ResponseWriter, r *http.Request) {
 		errJSON(w, r, &PayloadErr{err})
 		return
 	}
-
-	user := entity.User{
+	userArgs := service.UpdateArgs{
 		ID:        idUint,
 		FirstName: dto.FirstName,
 		LastName:  dto.LastName,
 		BirthDay:  birthDay,
-		Username:  dto.Username,
 	}
-	if err := uc.svc.Update(user); err != nil {
+	if err := uc.svc.Update(userArgs); err != nil {
 		errJSON(w, r, err)
 		return
 	}
-	render.JSON(w, r, basicMessage{Message: fmt.Sprintf("user %d updated successfully", user.ID)})
+	render.JSON(w, r, basicMessage{Message: fmt.Sprintf("user %d updated successfully", userArgs.ID)})
 }
 
 func (uc UserController) delete(w http.ResponseWriter, r *http.Request) {

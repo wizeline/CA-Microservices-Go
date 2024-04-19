@@ -1,11 +1,12 @@
 package service
 
 import (
-	"errors"
 	"slices"
+	"time"
 
 	"github.com/wizeline/CA-Microservices-Go/internal/entity"
 	"github.com/wizeline/CA-Microservices-Go/internal/logger"
+	"github.com/wizeline/CA-Microservices-Go/internal/util"
 )
 
 type UserRepo interface {
@@ -31,6 +32,11 @@ func (s UserService) Create(user entity.User) error {
 	if err != nil {
 		return err
 	}
+	hashedPassword, err := util.HashPassword(user.Passwd)
+	if err != nil {
+		return err
+	}
+	user.Passwd = hashedPassword
 	return s.repo.Create(user)
 }
 
@@ -78,10 +84,39 @@ func (s UserService) Find(filter, value string) ([]entity.User, error) {
 	return filteredUsers, nil
 }
 
-func (s UserService) Update(user entity.User) error {
-	err := s.validateUser(user)
+type UpdateArgs struct {
+	ID        uint64
+	FirstName string
+	LastName  string
+	BirthDay  time.Time
+}
+
+func (u UpdateArgs) Validate() error {
+	if u.ID == 0 {
+		return &InvalidInputErr{Field: "ID"}
+	}
+	return nil
+}
+
+func (s UserService) Update(args UpdateArgs) error {
+	err := args.Validate()
 	if err != nil {
 		return err
+	}
+
+	user, err := s.repo.Read(args.ID)
+	if err != nil {
+		return err
+	}
+
+	if args.FirstName != "" {
+		user.FirstName = args.FirstName
+	}
+	if args.LastName != "" {
+		user.LastName = args.LastName
+	}
+	if !args.BirthDay.IsZero() {
+		user.BirthDay = args.BirthDay
 	}
 	return s.repo.Update(user)
 }
@@ -117,7 +152,12 @@ func (s UserService) ChangePasswd(id uint64, passwd string) error {
 	if err != nil {
 		return err
 	}
-	user.Passwd = passwd
+
+	hashedPassword, err := util.HashPassword(passwd)
+	if err != nil {
+		return err
+	}
+	user.Passwd = hashedPassword
 	return s.repo.Update(user)
 }
 
@@ -135,15 +175,14 @@ func (s UserService) ValidateLogin(username string, password string) (entity.Use
 		return entity.User{}, err
 	}
 
-	if len(users) == 0 {
-		return entity.User{}, errors.New("user not found")
+	if len(users) != 1 {
+		return entity.User{}, InvalidInputErr{Field: "Username"}
 	}
 
-	if users[0].Passwd == password {
-		return users[0], nil
+	if err := util.CompareHashAndPassword(users[0].Passwd, password); err != nil {
+		return entity.User{}, ErrInvalidPassword
 	}
-
-	return entity.User{}, ErrInvalidPassword
+	return users[0], nil
 }
 
 func (s UserService) validateUser(user entity.User) error {

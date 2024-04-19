@@ -5,11 +5,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"github.com/wizeline/CA-Microservices-Go/internal/entity"
 	"github.com/wizeline/CA-Microservices-Go/internal/logger"
-	"github.com/wizeline/CA-Microservices-Go/internal/service/mocks"
-
-	"github.com/stretchr/testify/assert"
+	mocks "github.com/wizeline/CA-Microservices-Go/internal/service/mocks"
+	"github.com/wizeline/CA-Microservices-Go/internal/util"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // We ensure the UserRepo mock object satisfies the UserRepo signature.
@@ -30,17 +32,6 @@ func TestCreateUser(t *testing.T) {
 			user: entity.User{
 				FirstName: "",
 				LastName:  "Field",
-				Email:     "lisa@field.com",
-				Username:  "lisa",
-				Passwd:    "pass123",
-			},
-		},
-		{
-			name:    "Invalid user (empty lastname)",
-			wantErr: InvalidInputErr{Field: "LastName"},
-			user: entity.User{
-				FirstName: "Lisa",
-				LastName:  "",
 				Email:     "lisa@field.com",
 				Username:  "lisa",
 				Passwd:    "pass123",
@@ -108,8 +99,8 @@ func TestCreateUser(t *testing.T) {
 		},
 		{
 			name:    "Repository error",
-			repoErr: errors.New("Couldn't write user"),
-			wantErr: errors.New("Couldn't write user"),
+			repoErr: errors.New("mockRepo: can't write user"),
+			wantErr: errors.New("mockRepo: can't write user"),
 			user: entity.User{
 				FirstName: "lisa",
 				LastName:  "Field",
@@ -126,7 +117,7 @@ func TestCreateUser(t *testing.T) {
 			logger := logger.NewZeroLog()
 			s := NewUserService(mockRepo, logger)
 
-			mockRepo.On("Create", tt.user).Return(tt.repoErr)
+			mockRepo.On("Create", mock.AnythingOfType("entity.User")).Return(tt.repoErr)
 
 			gotErr := s.Create(tt.user)
 
@@ -166,8 +157,8 @@ func TestGetUser(t *testing.T) {
 		{
 			name:     "Repository fails to get user",
 			userID:   1,
-			repoErr:  errors.New("error from repo"),
-			wantErr:  errors.New("error from repo"),
+			repoErr:  errors.New("mockRepo: user doesn't exists"),
+			wantErr:  errors.New("mockRepo: user doesn't exists"),
 			wantUser: entity.User{},
 		},
 	}
@@ -219,8 +210,8 @@ func TestGetAllUsers(t *testing.T) {
 		{
 			name:      "Repository fails to get users",
 			users:     []entity.User{},
-			repoErr:   errors.New("Repo failed to get users"),
-			wantErr:   errors.New("Repo failed to get users"),
+			repoErr:   errors.New("mockRepo: user doesn't exists"),
+			wantErr:   errors.New("mockRepo: user doesn't exists"),
 			wantUsers: []entity.User{},
 		},
 	}
@@ -249,71 +240,21 @@ func TestGetAllUsers(t *testing.T) {
 
 func TestUpdateUser(t *testing.T) {
 	type testcase struct {
-		name    string
-		repoErr error
-		wantErr error
-		user    entity.User
+		name          string
+		repoReadErr   error
+		repoUpdateErr error
+		wantErr       error
+		args          UpdateArgs
+		user          entity.User
+		updatedUser   entity.User
 	}
 
 	validateTestCases := []testcase{
 		{
-			name:    "Invalid user (empty firstname)",
-			wantErr: InvalidInputErr{Field: "FirstName"},
-			user: entity.User{
-				ID:        2,
-				FirstName: "",
-				LastName:  "Field",
-				Email:     "lisa@field.com",
-				Username:  "lisa",
-				Passwd:    "pass123",
-			},
-		},
-		{
-			name:    "Invalid user (empty lastname)",
-			wantErr: InvalidInputErr{Field: "LastName"},
-			user: entity.User{
-				ID:        3,
-				FirstName: "Lisa",
-				LastName:  "",
-				Email:     "lisa@field.com",
-				Username:  "lisa",
-				Passwd:    "pass123",
-			},
-		},
-		{
-			name:    "Invalid user (empty email)",
-			wantErr: InvalidInputErr{Field: "Email"},
-			user: entity.User{
-				ID:        3,
-				FirstName: "Lisa",
-				LastName:  "Field",
-				Email:     "",
-				Username:  "lisa",
-				Passwd:    "pass123",
-			},
-		},
-		{
-			name:    "Invalid user (empty username)",
-			wantErr: InvalidInputErr{Field: "Username"},
-			user: entity.User{
-				ID:        3,
-				FirstName: "Lisa",
-				LastName:  "Field",
-				Email:     "lisa@field.com",
-				Username:  "",
-				Passwd:    "pass123",
-			},
-		},
-		{
-			name:    "Invalid user (passwd less than 6 characters)",
-			wantErr: InvalidInputErr{Field: "Passwd"},
-			user: entity.User{
-				ID:        3,
-				FirstName: "Lisa",
-				LastName:  "Field",
-				Email:     "lisa@field.com",
-				Username:  "lisa",
-				Passwd:    "pass1",
+			name:    "Invalid ID (must be nonzero)",
+			wantErr: InvalidInputErr{Field: "ID"},
+			args: UpdateArgs{
+				ID: 0,
 			},
 		},
 	}
@@ -325,7 +266,7 @@ func TestUpdateUser(t *testing.T) {
 
 			s := NewUserService(mockRepo, logger)
 
-			gotErr := s.Update(tt.user)
+			gotErr := s.Update(tt.args)
 
 			assert.Error(t, gotErr)
 			assert.EqualError(t, gotErr, tt.wantErr.Error())
@@ -334,27 +275,105 @@ func TestUpdateUser(t *testing.T) {
 
 	updateTestCases := []testcase{
 		{
-			name: "Valid user update",
+			name: "Updates FirstName",
+			args: UpdateArgs{
+				ID:        1,
+				FirstName: "lisa",
+			},
 			user: entity.User{
+				ID:        1,
+				FirstName: "laura",
+				LastName:  "Field",
+			},
+			updatedUser: entity.User{
 				ID:        1,
 				FirstName: "lisa",
 				LastName:  "Field",
-				Email:     "lisa@field.com",
-				Username:  "lisa",
-				Passwd:    "pass123",
 			},
 		},
 		{
-			name:    "Repo error",
-			repoErr: errors.New("repo: Couldn't write user"),
-			wantErr: errors.New("repo: Couldn't write user"),
+			name: "Updates LastName",
+			args: UpdateArgs{
+				ID:       1,
+				LastName: "Lawrence",
+			},
 			user: entity.User{
+				ID:        1,
+				FirstName: "laura",
+				LastName:  "Field",
+			},
+			updatedUser: entity.User{
+				ID:        1,
+				FirstName: "laura",
+				LastName:  "Lawrence",
+			},
+		},
+		{
+			name: "Updates Birthday",
+			args: UpdateArgs{
+				ID:       1,
+				BirthDay: time.Date(2000, 12, 20, 0, 0, 0, 0, time.UTC),
+			},
+			user: entity.User{
+				ID:        1,
+				FirstName: "laura",
+				LastName:  "Field",
+				BirthDay:  time.Date(1998, 12, 20, 0, 0, 0, 0, time.UTC),
+			},
+			updatedUser: entity.User{
+				ID:        1,
+				FirstName: "laura",
+				LastName:  "Field",
+				BirthDay:  time.Date(2000, 12, 20, 0, 0, 0, 0, time.UTC),
+			},
+		},
+		{
+			name: "Can update all fields at once",
+			args: UpdateArgs{
+				ID:        1,
+				FirstName: "lisa",
+				LastName:  "Lauwrence",
+				BirthDay:  time.Date(2000, 12, 20, 0, 0, 0, 0, time.UTC),
+			},
+			user: entity.User{
+				ID:        1,
+				FirstName: "laura",
+				LastName:  "Field",
+				BirthDay:  time.Date(1998, 12, 20, 0, 0, 0, 0, time.UTC),
+			},
+			updatedUser: entity.User{
+				ID:        1,
+				FirstName: "lisa",
+				LastName:  "Lauwrence",
+				BirthDay:  time.Date(2000, 12, 20, 0, 0, 0, 0, time.UTC),
+			},
+		},
+		{
+			name:        "Repository fails to get users",
+			repoReadErr: errors.New("mockRepo: user can't be updated"),
+			wantErr:     errors.New("mockRepo: user can't be updated"),
+			args: UpdateArgs{
+				ID:        1,
+				FirstName: "lisa",
+			},
+		},
+		{
+			name:          "Repository fails to update users",
+			repoUpdateErr: errors.New("mockRepo: user can't be updated"),
+			wantErr:       errors.New("mockRepo: user can't be updated"),
+			args: UpdateArgs{
+				ID:        1,
+				FirstName: "lisa",
+			},
+			user: entity.User{
+				ID:        1,
+				FirstName: "laura",
+				LastName:  "Field",
+			},
+			updatedUser: entity.User{
 				ID:        1,
 				FirstName: "lisa",
 				LastName:  "Field",
-				Email:     "lisa@field.com",
-				Username:  "lisa",
-				Passwd:    "pass123",
 			},
 		},
 	}
@@ -366,9 +385,13 @@ func TestUpdateUser(t *testing.T) {
 
 			s := NewUserService(mockRepo, logger)
 
-			mockRepo.On("Update", tt.user).Return(tt.repoErr)
+			mockRepo.On("Read", tt.args.ID).Return(tt.user, tt.repoReadErr)
 
-			gotErr := s.Update(tt.user)
+			if tt.repoReadErr == nil {
+				mockRepo.On("Update", tt.updatedUser).Return(tt.repoUpdateErr)
+			}
+
+			gotErr := s.Update(tt.args)
 
 			if tt.wantErr != nil {
 				assert.Error(t, gotErr)
@@ -394,8 +417,8 @@ func TestDeleteUser(t *testing.T) {
 		{
 			name:    "Repository fails to delete user",
 			userID:  1,
-			repoErr: errors.New("Some error happened while deleting user"),
-			wantErr: errors.New("Some error happened while deleting user"),
+			repoErr: errors.New("mockRepo: failed to delete user"),
+			wantErr: errors.New("mockRepo: failed to delete user"),
 		},
 	}
 
@@ -445,8 +468,8 @@ func TestUserIsActive(t *testing.T) {
 		},
 		{
 			name:         "Repository fails to get user",
-			repoErr:      errors.New("Some error happened in repo"),
-			wantErr:      errors.New("Some error happened in repo"),
+			repoErr:      errors.New("mockRepo: user doesn't exists"),
+			wantErr:      errors.New("mockRepo: user doesn't exists"),
 			wantIsActive: false,
 		},
 	}
@@ -497,14 +520,14 @@ func TestActivateUser(t *testing.T) {
 		{
 			name:          "Activate inexistent user",
 			userID:        1,
-			repoReadError: errors.New("repo: user doesn't exists"),
-			wantErr:       errors.New("repo: user doesn't exists"),
+			repoReadError: errors.New("mockRepo: user doesn't exists"),
+			wantErr:       errors.New("mockRepo: user doesn't exists"),
 		},
 		{
 			name:            "Can't activate user",
 			userID:          1,
-			repoUpdateError: errors.New("repo: user can't be updated"),
-			wantErr:         errors.New("repo: user can't be updated"),
+			repoUpdateError: errors.New("mockRepo: user can't be updated"),
+			wantErr:         errors.New("mockRepo: user can't be updated"),
 			user: entity.User{
 				ID:     1,
 				Active: false,
@@ -567,8 +590,8 @@ func TestChangeUserEmail(t *testing.T) {
 		{
 			name:          "Change email of inexistent user",
 			userID:        1,
-			repoReadError: errors.New("repo: user doesn't exists"),
-			wantErr:       errors.New("repo: user doesn't exists"),
+			repoReadError: errors.New("mockRepo: user doesn't exists"),
+			wantErr:       errors.New("mockRepo: user doesn't exists"),
 			user: entity.User{
 				ID:    1,
 				Email: "lisa@field.com",
@@ -578,8 +601,8 @@ func TestChangeUserEmail(t *testing.T) {
 			name:            "Can't change email of user",
 			userID:          1,
 			newEmail:        "testemail@email.com",
-			repoUpdateError: errors.New("repo: user can't be updated"),
-			wantErr:         errors.New("repo: user can't be updated"),
+			repoUpdateError: errors.New("mockRepo: user can't be updated"),
+			wantErr:         errors.New("mockRepo: user can't be updated"),
 			user: entity.User{
 				ID:    1,
 				Email: "lisa@field.com",
@@ -667,16 +690,15 @@ func TestChangeUserPasswd(t *testing.T) {
 			},
 		},
 		{
-			name:          "Change passwd of inexistent user",
-			userID:        1,
-			newPasswd:     "newpassword",
+			name:   "Repository fails to get user",
+			userID: 1, newPasswd: "newpass",
 			repoReadError: errors.New("mockRepo: user doesn't exists"),
 			wantErr:       errors.New("mockRepo: user doesn't exists"),
 		},
 		{
-			name:            "Can't change password of user",
+			name:            "Repository fails to update user",
 			userID:          1,
-			newPasswd:       "newpassword",
+			newPasswd:       "newpass",
 			repoUpdateError: errors.New("mockRepo: user can't be updated"),
 			wantErr:         errors.New("mockRepo: user can't be updated"),
 			user: entity.User{
@@ -685,7 +707,7 @@ func TestChangeUserPasswd(t *testing.T) {
 			},
 			userToStore: entity.User{
 				ID:     1,
-				Passwd: "newpassword",
+				Passwd: "newpass",
 			},
 		},
 	}
@@ -699,7 +721,12 @@ func TestChangeUserPasswd(t *testing.T) {
 			mockRepo.On("Read", tt.userID).Return(tt.user, tt.repoReadError)
 
 			if tt.repoReadError == nil {
-				mockRepo.On("Update", tt.userToStore).Return(tt.repoUpdateError)
+				mockRepo.On("Update", mock.AnythingOfType("entity.User")).Return(tt.repoUpdateError).Once().Run(func(args mock.Arguments) {
+					userArg := args.Get(0).(entity.User)
+
+					assert.Equal(t, tt.userID, userArg.ID)
+					assert.NoError(t, bcrypt.CompareHashAndPassword([]byte(userArg.Passwd), []byte(tt.newPasswd)))
+				})
 			}
 
 			gotErr := s.ChangePasswd(tt.userID, tt.newPasswd)
@@ -852,10 +879,15 @@ func TestFindUsers(t *testing.T) {
 }
 
 func TestValidateLogin(t *testing.T) {
+	userPasswd := "mypass"
+	hashedPasswd, _ := util.HashPassword(userPasswd)
+
 	users := []entity.User{
-		{ID: 1, Username: "user1", Passwd: "pass123"},
-		{ID: 2, Username: "user2", Passwd: "pass456"},
-		{ID: 3, Username: "user3", Passwd: "pass789"},
+		{
+			ID:       1,
+			Username: "user1",
+			Passwd:   hashedPasswd,
+		},
 	}
 
 	testsCases := []struct {
@@ -870,13 +902,20 @@ func TestValidateLogin(t *testing.T) {
 		{
 			name:     "Valid password",
 			username: "user1",
-			password: "pass123",
+			password: userPasswd,
 			users:    users,
 			wantUser: entity.User{
 				ID:       1,
 				Username: "user1",
-				Passwd:   "pass123",
+				Passwd:   hashedPasswd,
 			},
+		},
+		{
+			name:     "User doesn't exists",
+			username: "user2",
+			password: userPasswd,
+			users:    users,
+			wantErr:  InvalidInputErr{Field: "Username"},
 		},
 		{
 			name:     "Invalid password",
@@ -887,13 +926,13 @@ func TestValidateLogin(t *testing.T) {
 			wantErr:  ErrInvalidPassword,
 		},
 		{
-			name:     "Repository error",
-			username: "user1",
-			password: "pass567",
-			repoErr:  errors.New("Repository failed to fetch users"),
+			name:     "Repository fails to get user",
+			username: "user4",
+			password: userPasswd,
+			repoErr:  errors.New("mockRepo: user doesn't exists"),
+			wantErr:  errors.New("mockRepo: user doesn't exists"),
 			users:    []entity.User{},
 			wantUser: entity.User{},
-			wantErr:  errors.New("Repository failed to fetch users"),
 		},
 	}
 
@@ -917,4 +956,5 @@ func TestValidateLogin(t *testing.T) {
 			assert.Equal(t, tt.wantUser, gotUser)
 		})
 	}
+
 }
