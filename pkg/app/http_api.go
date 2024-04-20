@@ -44,7 +44,7 @@ func NewApiHTTP(cfg config.Config, l logger.ZeroLog) (ApiHTTP, error) {
 
 	// User dependencies
 	userRepo := repository.NewUserRepositoryPg(dbConn.DB())
-	userSvc := service.NewUserService(userRepo, l)
+	userSvc := service.NewUserService(userRepo)
 	userCtrl := controller.NewUserController(userSvc)
 
 	// Router
