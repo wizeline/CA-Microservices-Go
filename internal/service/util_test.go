@@ -1,4 +1,4 @@
-package util
+package service
 
 import (
 	"testing"
@@ -16,7 +16,7 @@ func TestIsValidEmail(t *testing.T) {
 		{
 			name:    "Empty",
 			email:   "",
-			err:     ErrValueEmpty,
+			err:     ErrEmptyValue,
 			wantErr: true,
 		},
 		{
@@ -34,7 +34,7 @@ func TestIsValidEmail(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := IsValidEmail(tt.email)
+			err := validateEmail(tt.email)
 			if tt.wantErr {
 				assert.ErrorIs(t, err, tt.err)
 				return
