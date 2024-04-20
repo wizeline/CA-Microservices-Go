@@ -24,7 +24,7 @@ var _ UserSvc = &mocks.UserSvc{}
 
 func TestUserControlller_create(t *testing.T) {
 	type svcArgs struct {
-		user entity.User
+		user service.UserCreateArgs
 	}
 	type svcResp struct {
 		err error
@@ -42,15 +42,8 @@ func TestUserControlller_create(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "Empty",
-			svc: svc{
-				args: svcArgs{
-					user: entity.User{},
-				},
-				resp: svcResp{
-					err: nil,
-				},
-			},
+			name: "Payload empty",
+			svc:  svc{},
 			req: httpRequestTest{
 				payload: []byte(""),
 			},
@@ -83,7 +76,7 @@ func TestUserControlller_create(t *testing.T) {
 			name: "Created",
 			svc: svc{
 				args: svcArgs{
-					user: entity.User{
+					user: service.UserCreateArgs{
 						FirstName: "foo",
 						LastName:  "baz",
 						Email:     "foo@example.com",

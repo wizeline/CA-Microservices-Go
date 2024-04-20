@@ -68,17 +68,17 @@ func (_m *UserSvc) ChangePasswd(id uint64, passwd string) error {
 	return r0
 }
 
-// Create provides a mock function with given fields: user
-func (_m *UserSvc) Create(user entity.User) error {
-	ret := _m.Called(user)
+// Create provides a mock function with given fields: args
+func (_m *UserSvc) Create(args service.UserCreateArgs) error {
+	ret := _m.Called(args)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Create")
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(entity.User) error); ok {
-		r0 = rf(user)
+	if rf, ok := ret.Get(0).(func(service.UserCreateArgs) error); ok {
+		r0 = rf(args)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -221,7 +221,7 @@ func (_m *UserSvc) IsActive(id uint64) (bool, error) {
 }
 
 // Update provides a mock function with given fields: args
-func (_m *UserSvc) Update(args service.UpdateArgs) error {
+func (_m *UserSvc) Update(args service.UserUpdateArgs) error {
 	ret := _m.Called(args)
 
 	if len(ret) == 0 {
@@ -229,7 +229,7 @@ func (_m *UserSvc) Update(args service.UpdateArgs) error {
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(service.UpdateArgs) error); ok {
+	if rf, ok := ret.Get(0).(func(service.UserUpdateArgs) error); ok {
 		r0 = rf(args)
 	} else {
 		r0 = ret.Error(0)

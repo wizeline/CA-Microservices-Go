@@ -65,11 +65,11 @@ type userLoginResponse struct {
 }
 
 type UserSvc interface {
-	Create(user entity.User) error
+	Create(args service.UserCreateArgs) error
 	Get(id uint64) (entity.User, error)
 	GetAll() ([]entity.User, error)
 	Find(filter, value string) ([]entity.User, error)
-	Update(args service.UpdateArgs) error
+	Update(args service.UserUpdateArgs) error
 	Delete(id uint64) error
 
 	Activate(id uint64) error
@@ -112,7 +112,7 @@ func (uc UserController) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := entity.User{
+	user := service.UserCreateArgs{
 		FirstName: dto.FirstName,
 		LastName:  dto.LastName,
 		Email:     dto.Email,
@@ -205,7 +205,7 @@ func (uc UserController) update(w http.ResponseWriter, r *http.Request) {
 		errJSON(w, r, &PayloadErr{err})
 		return
 	}
-	userArgs := service.UpdateArgs{
+	userArgs := service.UserUpdateArgs{
 		ID:        idUint,
 		FirstName: dto.FirstName,
 		LastName:  dto.LastName,
