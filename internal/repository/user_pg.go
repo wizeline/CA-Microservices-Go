@@ -17,15 +17,8 @@ func NewUserRepositoryPg(db *sql.DB) UserRepositoryPg {
 }
 
 func (r UserRepositoryPg) Create(user entity.User) error {
-	if err := validateUser(user); err != nil {
-		return err
-	}
-	hashedPasswd, err := hashPassword(user.Passwd)
-	if err != nil {
-		return err
-	}
-	_, err = r.db.Exec("INSERT INTO users (first_name, last_name, birthday, email, username, passwd) VALUES ($1, $2, $3, $4, $5, $6)",
-		user.FirstName, user.LastName, user.BirthDay, user.Email, user.Username, hashedPasswd,
+	_, err := r.db.Exec("INSERT INTO users (first_name, last_name, birthday, email, username, passwd) VALUES ($1, $2, $3, $4, $5, $6)",
+		user.FirstName, user.LastName, user.BirthDay, user.Email, user.Username, user.Passwd,
 	)
 	if err != nil {
 		return err
@@ -34,7 +27,7 @@ func (r UserRepositoryPg) Create(user entity.User) error {
 	return nil
 }
 
-func (r UserRepositoryPg) Read(id int) (entity.User, error) {
+func (r UserRepositoryPg) Read(id uint64) (entity.User, error) {
 	var user entity.User
 	row := r.db.QueryRow(`
 		SELECT id, first_name, last_name, email, birthday,
@@ -85,14 +78,7 @@ func (r UserRepositoryPg) ReadAll() ([]entity.User, error) {
 }
 
 func (r UserRepositoryPg) Update(user entity.User) error {
-	if err := validateUser(user); err != nil {
-		return err
-	}
-	hashedPasswd, err := hashPassword(user.Passwd)
-	if err != nil {
-		return err
-	}
-	_, err = r.db.Exec(`
+	_, err := r.db.Exec(`
 		UPDATE users SET 
 			first_name = $1,
 			last_name = $2, 
@@ -107,13 +93,13 @@ func (r UserRepositoryPg) Update(user entity.User) error {
 		WHERE 
 			id = $9`,
 		user.FirstName, user.LastName, user.Email, user.BirthDay,
-		user.Username, hashedPasswd, user.Active, user.LastLogin,
+		user.Username, user.Passwd, user.Active, user.LastLogin,
 		user.ID,
 	)
 	return err
 }
 
-func (r UserRepositoryPg) Delete(id int) error {
+func (r UserRepositoryPg) Delete(id uint64) error {
 	_, err := r.db.Exec("DELETE FROM users WHERE id = $1", id)
 	return err
 }

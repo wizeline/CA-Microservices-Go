@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/wizeline/CA-Microservices-Go/internal/entity"
+	"github.com/wizeline/CA-Microservices-Go/internal/service"
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
@@ -64,11 +65,11 @@ type userLoginResponse struct {
 }
 
 type UserSvc interface {
-	Create(user entity.User) error
+	Create(args service.UserCreateArgs) error
 	Get(id uint64) (entity.User, error)
 	GetAll() ([]entity.User, error)
 	Find(filter, value string) ([]entity.User, error)
-	Update(user entity.User) error
+	Update(args service.UserUpdateArgs) error
 	Delete(id uint64) error
 
 	Activate(id uint64) error
@@ -90,11 +91,11 @@ func NewUserController(svc UserSvc) UserController {
 
 func (uc UserController) SetRoutes(r chi.Router) {
 	r.Post("/users", uc.create)
-	r.Get("/users/{id}", uc.get)
+	r.Get("/user", uc.get)
 	r.Get("/users", uc.getAll)
-	r.Get("/users/{filter}/{value}", uc.getFiltered)
-	r.Put("/users/{id}", uc.update)
-	r.Delete("/users/{id}", uc.update)
+	r.Get("/users/filter", uc.getFiltered)
+	r.Put("/users", uc.update)
+	r.Delete("/users", uc.delete)
 
 	r.Post("/login", uc.login)
 }
@@ -111,7 +112,7 @@ func (uc UserController) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user := entity.User{
+	user := service.UserCreateArgs{
 		FirstName: dto.FirstName,
 		LastName:  dto.LastName,
 		Email:     dto.Email,
@@ -204,19 +205,17 @@ func (uc UserController) update(w http.ResponseWriter, r *http.Request) {
 		errJSON(w, r, &PayloadErr{err})
 		return
 	}
-
-	user := entity.User{
+	userArgs := service.UserUpdateArgs{
 		ID:        idUint,
 		FirstName: dto.FirstName,
 		LastName:  dto.LastName,
 		BirthDay:  birthDay,
-		Username:  dto.Username,
 	}
-	if err := uc.svc.Update(user); err != nil {
+	if err := uc.svc.Update(userArgs); err != nil {
 		errJSON(w, r, err)
 		return
 	}
-	render.JSON(w, r, basicMessage{Message: fmt.Sprintf("user %d updated successfully", user.ID)})
+	render.JSON(w, r, basicMessage{Message: fmt.Sprintf("user %d updated successfully", userArgs.ID)})
 }
 
 func (uc UserController) delete(w http.ResponseWriter, r *http.Request) {
