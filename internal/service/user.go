@@ -1,12 +1,10 @@
 package service
 
 import (
-	"slices"
+	"fmt"
 	"time"
 
 	"github.com/wizeline/CA-Microservices-Go/internal/entity"
-	"github.com/wizeline/CA-Microservices-Go/internal/logger"
-	"github.com/wizeline/CA-Microservices-Go/internal/util"
 )
 
 type UserRepo interface {
@@ -17,30 +15,54 @@ type UserRepo interface {
 	Delete(id uint64) error
 }
 
+type UserCreateArgs struct {
+	FirstName string
+	LastName  string
+	Email     string
+	BirthDay  time.Time
+	Username  string
+	Passwd    string
+}
+
+type UserUpdateArgs struct {
+	ID        uint64
+	FirstName string
+	LastName  string
+	BirthDay  time.Time
+}
+
 type UserService struct {
 	repo UserRepo
 }
 
-func NewUserService(repo UserRepo, l logger.ZeroLog) UserService {
+func NewUserService(repo UserRepo) UserService {
 	return UserService{
 		repo: repo,
 	}
 }
 
-func (s UserService) Create(user entity.User) error {
-	err := s.validateUser(user)
+func (s UserService) Create(args UserCreateArgs) error {
+	if err := validateUserCreate(args); err != nil {
+		return err
+	}
+	hashedPwd, err := hashPasswd(args.Passwd)
 	if err != nil {
 		return err
 	}
-	hashedPassword, err := util.HashPassword(user.Passwd)
-	if err != nil {
-		return err
-	}
-	user.Passwd = hashedPassword
-	return s.repo.Create(user)
+	return s.repo.Create(entity.User{
+		FirstName: args.FirstName,
+		LastName:  args.LastName,
+		Email:     args.Email,
+		BirthDay:  args.BirthDay,
+		Username:  args.Username,
+		Passwd:    hashedPwd,
+	})
 }
 
 func (s UserService) Get(id uint64) (entity.User, error) {
+	if id == 0 {
+		return entity.User{}, ErrZeroValue
+	}
 	return s.repo.Read(id)
 }
 
@@ -49,17 +71,15 @@ func (s UserService) GetAll() ([]entity.User, error) {
 }
 
 func (s UserService) Find(filter, value string) ([]entity.User, error) {
-	err := validateFilter(filter)
-	if err != nil {
-		return []entity.User{}, err
+	if err := validateUserFilter(filter); err != nil {
+		return nil, err
 	}
-
 	users, err := s.repo.ReadAll()
 	if err != nil {
-		return []entity.User{}, err
+		return nil, err
 	}
 
-	filteredUsers := []entity.User{}
+	filteredUsers := make([]entity.User, 0)
 	for _, user := range users {
 		switch {
 		case filter == "FirstName":
@@ -84,26 +104,10 @@ func (s UserService) Find(filter, value string) ([]entity.User, error) {
 	return filteredUsers, nil
 }
 
-type UpdateArgs struct {
-	ID        uint64
-	FirstName string
-	LastName  string
-	BirthDay  time.Time
-}
-
-func (u UpdateArgs) Validate() error {
-	if u.ID == 0 {
-		return &InvalidInputErr{Field: "ID"}
-	}
-	return nil
-}
-
-func (s UserService) Update(args UpdateArgs) error {
-	err := args.Validate()
-	if err != nil {
+func (s UserService) Update(args UserUpdateArgs) error {
+	if err := validateUserUpdate(args); err != nil {
 		return err
 	}
-
 	user, err := s.repo.Read(args.ID)
 	if err != nil {
 		return err
@@ -122,10 +126,16 @@ func (s UserService) Update(args UpdateArgs) error {
 }
 
 func (s UserService) Delete(id uint64) error {
+	if id == 0 {
+		return &InvalidInputErr{Field: "id", Err: ErrZeroValue}
+	}
 	return s.repo.Delete(id)
 }
 
 func (s UserService) Activate(id uint64) error {
+	if id == 0 {
+		return &InvalidInputErr{Field: "id", Err: ErrZeroValue}
+	}
 	user, err := s.repo.Read(id)
 	if err != nil {
 		return err
@@ -135,6 +145,13 @@ func (s UserService) Activate(id uint64) error {
 }
 
 func (s UserService) ChangeEmail(id uint64, email string) error {
+	if id == 0 {
+		return &InvalidInputErr{Field: "id", Err: ErrZeroValue}
+	}
+	if err := validateEmail(email); err != nil {
+		return &InvalidInputErr{Field: "email", Err: err}
+	}
+
 	user, err := s.repo.Read(id)
 	if err != nil {
 		return err
@@ -144,8 +161,7 @@ func (s UserService) ChangeEmail(id uint64, email string) error {
 }
 
 func (s UserService) ChangePasswd(id uint64, passwd string) error {
-	err := validatePassword(passwd)
-	if err != nil {
+	if err := validateUserPasswd(passwd); err != nil {
 		return err
 	}
 	user, err := s.repo.Read(id)
@@ -153,11 +169,11 @@ func (s UserService) ChangePasswd(id uint64, passwd string) error {
 		return err
 	}
 
-	hashedPassword, err := util.HashPassword(passwd)
+	hashedPasswd, err := hashPasswd(passwd)
 	if err != nil {
 		return err
 	}
-	user.Passwd = hashedPassword
+	user.Passwd = hashedPasswd
 	return s.repo.Update(user)
 }
 
@@ -169,47 +185,22 @@ func (s UserService) IsActive(id uint64) (bool, error) {
 	return user.Active, nil
 }
 
-func (s UserService) ValidateLogin(username string, password string) (entity.User, error) {
+func (s UserService) ValidateLogin(username string, passwd string) (entity.User, error) {
+	if username == "" {
+		return entity.User{}, &InvalidInputErr{Field: "username", Err: ErrEmptyValue}
+	}
+	if err := validateUserPasswd(passwd); err != nil {
+		return entity.User{}, err
+	}
 	users, err := s.Find("Username", username)
 	if err != nil {
 		return entity.User{}, err
 	}
-
-	if len(users) != 1 {
-		return entity.User{}, InvalidInputErr{Field: "Username"}
+	if total := len(users); total != 1 {
+		return entity.User{}, fmt.Errorf("expected one user got %d", total)
 	}
-
-	if err := util.CompareHashAndPassword(users[0].Passwd, password); err != nil {
-		return entity.User{}, ErrInvalidPassword
+	if err := compareHashAndPassword(users[0].Passwd, passwd); err != nil {
+		return entity.User{}, ErrPasswdDoNotMatch
 	}
 	return users[0], nil
-}
-
-func (s UserService) validateUser(user entity.User) error {
-	switch {
-	case user.FirstName == "":
-		return InvalidInputErr{Field: "FirstName"}
-	case user.LastName == "":
-		return InvalidInputErr{Field: "LastName"}
-	case user.Email == "":
-		return InvalidInputErr{Field: "Email"}
-	case user.Username == "":
-		return InvalidInputErr{Field: "Username"}
-	}
-	return validatePassword(user.Passwd)
-}
-
-func validatePassword(password string) error {
-	if password == "" || len(password) < 6 {
-		return InvalidInputErr{Field: "Passwd"}
-	}
-	return nil
-}
-
-func validateFilter(filter string) error {
-	validFilters := []string{"FirstName", "LastName", "Email", "Username"}
-	if !slices.Contains(validFilters, filter) {
-		return InvalidFilter{Filter: filter}
-	}
-	return nil
 }

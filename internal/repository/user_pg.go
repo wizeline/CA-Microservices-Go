@@ -17,9 +17,6 @@ func NewUserRepositoryPg(db *sql.DB) UserRepositoryPg {
 }
 
 func (r UserRepositoryPg) Create(user entity.User) error {
-	if err := validateUser(user); err != nil {
-		return err
-	}
 	_, err := r.db.Exec("INSERT INTO users (first_name, last_name, birthday, email, username, passwd) VALUES ($1, $2, $3, $4, $5, $6)",
 		user.FirstName, user.LastName, user.BirthDay, user.Email, user.Username, user.Passwd,
 	)
@@ -81,9 +78,6 @@ func (r UserRepositoryPg) ReadAll() ([]entity.User, error) {
 }
 
 func (r UserRepositoryPg) Update(user entity.User) error {
-	if err := validateUser(user); err != nil {
-		return err
-	}
 	_, err := r.db.Exec(`
 		UPDATE users SET 
 			first_name = $1,
