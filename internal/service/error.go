@@ -5,7 +5,16 @@ import (
 	"fmt"
 )
 
-var ErrInvalidPassword = errors.New("can't login, passwords doesn't match")
+var (
+	ErrNotSupported = errors.New("not supported")
+	ErrZeroValue    = errors.New("zero value")
+	ErrEmptyValue   = errors.New("empty value")
+
+	ErrEmptyArgs        = errors.New("empty arguments")
+	ErrInvalidEmail     = errors.New("invalid email")
+	ErrInvalidPasswd    = errors.New("invalid password")
+	ErrPasswdDoNotMatch = errors.New("passwords do not match")
+)
 
 type Err struct {
 	Err error
@@ -21,16 +30,26 @@ func (e Err) Unwrap() error {
 
 type InvalidInputErr struct {
 	Field string
+	Err   error
 }
 
 func (e InvalidInputErr) Error() string {
-	return fmt.Sprintf("Invalid value for field: %s", e.Field)
+	return fmt.Sprintf("invalid input for field %q : %s", e.Field, e.Err)
 }
 
-type InvalidFilter struct {
+func (e InvalidInputErr) Unwrap() error {
+	return e.Err
+}
+
+type InvalidFilterErr struct {
 	Filter string
+	Err    error
 }
 
-func (e InvalidFilter) Error() string {
-	return fmt.Sprintf("Invalid filter for search: %s", e.Filter)
+func (e InvalidFilterErr) Error() string {
+	return fmt.Sprintf("invalid filter %q : %s", e.Filter, e.Err)
+}
+
+func (e InvalidFilterErr) Unwrap() error {
+	return e.Err
 }
