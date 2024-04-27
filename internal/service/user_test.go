@@ -5,10 +5,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/wizeline/CA-Microservices-Go/internal/entity"
 	"github.com/wizeline/CA-Microservices-Go/internal/service/mocks"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -150,39 +151,39 @@ func TestUserService_Get(t *testing.T) {
 		err  error
 	}
 	type repo struct {
-		args uint64
+		id   uint64
 		resp repoResp
 	}
 	tests := []struct {
-		name   string
-		repo   repo
-		userID uint64
-		exp    entity.User
-		err    error
+		name string
+		repo repo
+		id   uint64
+		exp  UserResponse
+		err  error
 	}{
 		{
-			name:   "ID zero value",
-			userID: 0,
-			exp:    entity.User{},
-			err:    ErrZeroValue,
+			name: "ID zero value",
+			id:   0,
+			exp:  UserResponse{},
+			err:  ErrZeroValue,
 		},
 		{
-			name:   "Repository error",
-			userID: 1,
+			name: "Repository error",
+			id:   1,
 			repo: repo{
-				args: 1,
+				id: 1,
 				resp: repoResp{
 					user: entity.User{},
 					err:  errRepoTest,
 				},
 			},
 			err: errRepoTest,
-			exp: entity.User{},
+			exp: UserResponse{},
 		},
 		{
-			name: "Valid user ID",
+			name: "Valid User",
 			repo: repo{
-				args: 1,
+				id: 1,
 				resp: repoResp{
 					user: entity.User{
 						ID:        1,
@@ -191,70 +192,67 @@ func TestUserService_Get(t *testing.T) {
 						Email:     "lisa@field.com",
 						BirthDay:  time.Date(1998, 12, 20, 0, 0, 0, 0, time.UTC),
 						Username:  "lisa",
-						Passwd:    "pass123",
-						Active:    true,
 					},
 					err: nil,
 				},
 			},
-			userID: 1,
-			exp: entity.User{
+			id: 1,
+			exp: UserResponse{
 				ID:        1,
 				FirstName: "lisa",
 				LastName:  "Field",
 				Email:     "lisa@field.com",
 				BirthDay:  time.Date(1998, 12, 20, 0, 0, 0, 0, time.UTC),
 				Username:  "lisa",
-				Passwd:    "pass123",
-				Active:    true,
 			},
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			mockRepo := &mocks.UserRepo{}
-			mockRepo.On("Read", tt.repo.args).Return(tt.repo.resp.user, tt.repo.resp.err)
+			mockRepo.On("Read", test.repo.id).Return(test.repo.resp.user, test.repo.resp.err)
 			svc := NewUserService(mockRepo)
-			out, err := svc.Get(tt.userID)
 
-			if tt.err != nil {
+			out, err := svc.Get(test.id)
+
+			if test.err != nil {
 				assert.Error(t, err)
-				assert.EqualError(t, err, tt.err.Error())
+				assert.EqualError(t, err, test.err.Error())
 				return
 			}
 
 			assert.Nil(t, err)
-			assert.Equal(t, tt.exp, out)
+			assert.Equal(t, test.exp, out)
 		})
 	}
 
 }
 
 func TestUserService_GetAll(t *testing.T) {
-	type repo struct {
+	type repoResp struct {
 		users []entity.User
 		err   error
 	}
 	tests := []struct {
-		name string
-		repo repo
-		exp  []entity.User
-		err  error
+		name     string
+		repoResp repoResp
+		exp      []UserResponse
+		err      error
 	}{
 		{
 			name: "Repository error",
-			repo: repo{
+			repoResp: repoResp{
 				users: []entity.User{},
 				err:   errRepoTest,
 			},
-			exp: []entity.User{},
+			exp: []UserResponse{},
 			err: errRepoTest,
 		},
 		{
 
 			name: "Sucessful",
-			repo: repo{
+			repoResp: repoResp{
 				users: []entity.User{
 					{ID: 1, Username: "lisafield@mail.com"},
 					{ID: 2, Username: "mat123@mail.com"},
@@ -262,7 +260,7 @@ func TestUserService_GetAll(t *testing.T) {
 				},
 				err: nil,
 			},
-			exp: []entity.User{
+			exp: []UserResponse{
 				{ID: 1, Username: "lisafield@mail.com"},
 				{ID: 2, Username: "mat123@mail.com"},
 				{ID: 3, Username: "juan@mail.com"},
@@ -271,22 +269,22 @@ func TestUserService_GetAll(t *testing.T) {
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			mockRepo := mocks.NewUserRepo(t)
-			mockRepo.On("ReadAll").Return(tt.repo.users, tt.repo.err)
+			mockRepo.On("ReadAll").Return(test.repoResp.users, test.repoResp.err)
 			svc := NewUserService(mockRepo)
 
 			out, err := svc.GetAll()
 
-			if tt.err != nil {
+			if test.err != nil {
 				assert.Error(t, err)
-				assert.EqualError(t, err, tt.err.Error())
+				assert.EqualError(t, err, test.err.Error())
 				return
 			}
 
 			assert.Nil(t, err)
-			assert.Equal(t, tt.exp, out)
+			assert.Equal(t, test.exp, out)
 		})
 	}
 }
@@ -304,25 +302,20 @@ func TestUserService_Update(t *testing.T) {
 		args entity.User
 		err  error
 	}
-	type repo struct {
-		read   repoRead
-		update repoUpdate
-	}
 	tests := []struct {
-		name string
-		repo repo
-		args UserUpdateArgs
-		err  error
+		name       string
+		repoRead   repoRead
+		repoUpdate repoUpdate
+		args       UserUpdateArgs
+		err        error
 	}{
 		{
 			name: "No arguments",
-			repo: repo{},
 			args: UserUpdateArgs{},
 			err:  ErrEmptyArgs,
 		},
 		{
 			name: "ID zero value",
-			repo: repo{},
 			args: UserUpdateArgs{
 				ID:        0,
 				FirstName: "foo",
@@ -336,17 +329,15 @@ func TestUserService_Update(t *testing.T) {
 				FirstName: "Lisa",
 			},
 			err: nil,
-			repo: repo{
-				read: repoRead{
-					id: 1,
-					resp: repoReadResp{
-						user: entity.User{ID: 1, FirstName: "Laura"},
-						err:  nil,
-					},
+			repoRead: repoRead{
+				id: 1,
+				resp: repoReadResp{
+					user: entity.User{ID: 1, FirstName: "Laura"},
+					err:  nil,
 				},
-				update: repoUpdate{
-					args: entity.User{ID: 1, FirstName: "Lisa"},
-				},
+			},
+			repoUpdate: repoUpdate{
+				args: entity.User{ID: 1, FirstName: "Lisa"},
 			},
 		},
 		{
@@ -356,17 +347,16 @@ func TestUserService_Update(t *testing.T) {
 				LastName: "Lawrence",
 			},
 			err: nil,
-			repo: repo{
-				read: repoRead{
-					id: 1,
-					resp: repoReadResp{
-						user: entity.User{ID: 1, LastName: "Miller"},
-						err:  nil,
-					},
+
+			repoRead: repoRead{
+				id: 1,
+				resp: repoReadResp{
+					user: entity.User{ID: 1, LastName: "Miller"},
+					err:  nil,
 				},
-				update: repoUpdate{
-					args: entity.User{ID: 1, LastName: "Lawrence"},
-				},
+			},
+			repoUpdate: repoUpdate{
+				args: entity.User{ID: 1, LastName: "Lawrence"},
 			},
 		},
 		{
@@ -376,24 +366,22 @@ func TestUserService_Update(t *testing.T) {
 				BirthDay: time.Date(2000, 12, 20, 0, 0, 0, 0, time.UTC),
 			},
 			err: nil,
-			repo: repo{
-				read: repoRead{
-					id: 1,
-					resp: repoReadResp{
-						user: entity.User{
-							ID:       1,
-							BirthDay: time.Date(1998, 12, 20, 0, 0, 0, 0, time.UTC),
-						},
-						err: nil,
-					},
-				},
-				update: repoUpdate{
-					args: entity.User{
+			repoRead: repoRead{
+				id: 1,
+				resp: repoReadResp{
+					user: entity.User{
 						ID:       1,
-						BirthDay: time.Date(2000, 12, 20, 0, 0, 0, 0, time.UTC),
+						BirthDay: time.Date(1998, 12, 20, 0, 0, 0, 0, time.UTC),
 					},
 					err: nil,
 				},
+			},
+			repoUpdate: repoUpdate{
+				args: entity.User{
+					ID:       1,
+					BirthDay: time.Date(2000, 12, 20, 0, 0, 0, 0, time.UTC),
+				},
+				err: nil,
 			},
 		},
 		{
@@ -405,28 +393,27 @@ func TestUserService_Update(t *testing.T) {
 				BirthDay:  time.Date(2000, 12, 20, 0, 0, 0, 0, time.UTC),
 			},
 			err: nil,
-			repo: repo{
-				read: repoRead{
-					id: 1,
-					resp: repoReadResp{
-						user: entity.User{
-							ID:        1,
-							FirstName: "laura",
-							LastName:  "Field",
-							BirthDay:  time.Date(1998, 12, 20, 0, 0, 0, 0, time.UTC),
-						},
-						err: nil,
-					},
-				},
-				update: repoUpdate{
-					args: entity.User{
+
+			repoRead: repoRead{
+				id: 1,
+				resp: repoReadResp{
+					user: entity.User{
 						ID:        1,
-						FirstName: "lisa",
-						LastName:  "Lauwrence",
-						BirthDay:  time.Date(2000, 12, 20, 0, 0, 0, 0, time.UTC),
+						FirstName: "laura",
+						LastName:  "Field",
+						BirthDay:  time.Date(1998, 12, 20, 0, 0, 0, 0, time.UTC),
 					},
 					err: nil,
 				},
+			},
+			repoUpdate: repoUpdate{
+				args: entity.User{
+					ID:        1,
+					FirstName: "lisa",
+					LastName:  "Lauwrence",
+					BirthDay:  time.Date(2000, 12, 20, 0, 0, 0, 0, time.UTC),
+				},
+				err: nil,
 			},
 		},
 		{
@@ -436,16 +423,14 @@ func TestUserService_Update(t *testing.T) {
 				FirstName: "lisa",
 			},
 			err: errRepoTest,
-			repo: repo{
-				read: repoRead{
-					id: 1,
-					resp: repoReadResp{
-						user: entity.User{},
-						err:  errRepoTest,
-					},
+			repoRead: repoRead{
+				id: 1,
+				resp: repoReadResp{
+					user: entity.User{},
+					err:  errRepoTest,
 				},
-				update: repoUpdate{},
 			},
+			repoUpdate: repoUpdate{},
 		},
 		{
 			name: "Repository fails to update users",
@@ -454,42 +439,40 @@ func TestUserService_Update(t *testing.T) {
 				FirstName: "lisa",
 			},
 			err: errRepoTest,
-			repo: repo{
-				read: repoRead{
-					id: 1,
-					resp: repoReadResp{
-						user: entity.User{
-							ID:        1,
-							FirstName: "laura",
-							LastName:  "Field",
-						},
-						err: nil,
-					},
-				},
-				update: repoUpdate{
-					args: entity.User{
+			repoRead: repoRead{
+				id: 1,
+				resp: repoReadResp{
+					user: entity.User{
 						ID:        1,
-						FirstName: "lisa",
+						FirstName: "laura",
 						LastName:  "Field",
 					},
-					err: errRepoTest,
+					err: nil,
 				},
+			},
+			repoUpdate: repoUpdate{
+				args: entity.User{
+					ID:        1,
+					FirstName: "lisa",
+					LastName:  "Field",
+				},
+				err: errRepoTest,
 			},
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			mockRepo := &mocks.UserRepo{}
-			mockRepo.On("Read", tt.repo.read.id).Return(tt.repo.read.resp.user, tt.repo.read.resp.err)
-			mockRepo.On("Update", tt.repo.update.args).Return(tt.repo.update.err)
+			mockRepo.On("Read", test.repoRead.id).Return(test.repoRead.resp.user, test.repoRead.resp.err)
+			mockRepo.On("Update", test.repoUpdate.args).Return(test.repoUpdate.err)
 			svc := NewUserService(mockRepo)
 
-			err := svc.Update(tt.args)
+			err := svc.Update(test.args)
 
-			if tt.err != nil {
+			if test.err != nil {
 				assert.Error(t, err)
-				assert.EqualError(t, err, tt.err.Error())
+				assert.EqualError(t, err, test.err.Error())
 				return
 			}
 
@@ -1000,6 +983,10 @@ func TestUserService_Find(t *testing.T) {
 }
 
 func TestUserService_ValidateLogin(t *testing.T) {
+	type repoResp struct {
+		users []entity.User
+		err   error
+	}
 	userPasswd := "mypass"
 	hashedPasswd, _ := hashPasswd(userPasswd)
 
@@ -1011,69 +998,77 @@ func TestUserService_ValidateLogin(t *testing.T) {
 		},
 	}
 
-	testsCases := []struct {
+	tests := []struct {
 		name     string
+		repoResp repoResp
 		username string
 		password string
-		repoErr  error
-		users    []entity.User
-		wantErr  error
-		wantUser entity.User
+		exp      UserLoginResponse
+		err      error
 	}{
-		{
-			name:     "Valid password",
-			username: "user1",
-			password: userPasswd,
-			users:    users,
-			wantUser: entity.User{
-				ID:       1,
-				Username: "user1",
-				Passwd:   hashedPasswd,
-			},
-		},
 		{
 			name:     "User doesn't exists",
 			username: "user2",
 			password: userPasswd,
-			users:    users,
-			wantErr:  errors.New("expected one user got 0"),
+			repoResp: repoResp{
+				users: users,
+				err:   nil,
+			},
+			err: errors.New("expected one user got 0"),
 		},
 		{
 			name:     "Invalid password",
 			username: "user1",
 			password: "pass567",
-			users:    users,
-			wantUser: entity.User{},
-			wantErr:  ErrPasswdDoNotMatch,
+			repoResp: repoResp{
+				users: users,
+				err:   nil,
+			},
+			exp: UserLoginResponse{},
+			err: ErrPasswdDoNotMatch,
 		},
 		{
-			name:     "Repository fails to get user",
+			name:     "Repository error",
 			username: "user4",
 			password: userPasswd,
-			repoErr:  errors.New("mockRepo: user doesn't exists"),
-			wantErr:  errors.New("mockRepo: user doesn't exists"),
-			users:    []entity.User{},
-			wantUser: entity.User{},
+			repoResp: repoResp{
+				users: nil,
+				err:   errors.New("mockRepo: user doesn't exists"),
+			},
+			err: errors.New("mockRepo: user doesn't exists"),
+			exp: UserLoginResponse{},
+		},
+		{
+			name:     "Valid Login",
+			username: "user1",
+			password: userPasswd,
+			repoResp: repoResp{
+				users: users,
+				err:   nil,
+			},
+			exp: UserLoginResponse{
+				ID:       1,
+				Username: "user1",
+			},
 		},
 	}
 
-	for _, tt := range testsCases {
-		t.Run(tt.name, func(t *testing.T) {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
 			mockRepo := mocks.NewUserRepo(t)
+			mockRepo.On("ReadAll").Return(test.repoResp.users, test.repoResp.err)
 			svc := NewUserService(mockRepo)
 
-			mockRepo.On("ReadAll").Return(tt.users, tt.repoErr)
+			out, err := svc.ValidateLogin(test.username, test.password)
 
-			gotUser, gotErr := svc.ValidateLogin(tt.username, tt.password)
-
-			if tt.wantErr != nil {
-				assert.Error(t, gotErr)
-				assert.EqualError(t, gotErr, tt.wantErr.Error())
-			} else {
-				assert.Nil(t, gotErr)
+			if test.err != nil {
+				assert.Error(t, err)
+				assert.EqualError(t, err, test.err.Error())
+				return
 			}
 
-			assert.Equal(t, tt.wantUser, gotUser)
+			assert.Nil(t, err)
+			assert.Equal(t, test.exp, out)
 		})
 	}
 
