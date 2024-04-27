@@ -42,10 +42,6 @@ type userResponse struct {
 	Email     string `json:"email"`
 	BirthDay  string `json:"birthday"`
 	Username  string `json:"username"`
-	LastLogin string `json:"last_login"`
-
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
 }
 
 // userLoginReq represents the data transfer object requested for login a user.
@@ -66,8 +62,8 @@ type userLoginResponse struct {
 
 type UserSvc interface {
 	Create(args service.UserCreateArgs) error
-	Get(id uint64) (entity.User, error)
-	GetAll() ([]entity.User, error)
+	Get(id uint64) (service.UserResponse, error)
+	GetAll() ([]service.UserResponse, error)
 	Find(filter, value string) ([]entity.User, error)
 	Update(args service.UserUpdateArgs) error
 	Delete(id uint64) error
@@ -76,7 +72,7 @@ type UserSvc interface {
 	ChangeEmail(id uint64, email string) error
 	ChangePasswd(id uint64, passwd string) error
 	IsActive(id uint64) (bool, error)
-	ValidateLogin(username string, passwd string) (entity.User, error)
+	ValidateLogin(username string, passwd string) (service.UserLoginResponse, error)
 }
 
 type UserController struct {
@@ -146,7 +142,7 @@ func (uc UserController) get(w http.ResponseWriter, r *http.Request) {
 		errJSON(w, r, err)
 		return
 	}
-	render.JSON(w, r, newUserResponse(user))
+	render.JSON(w, r, parseUserResponse(user))
 }
 
 func (uc UserController) getAll(w http.ResponseWriter, r *http.Request) {
@@ -158,7 +154,7 @@ func (uc UserController) getAll(w http.ResponseWriter, r *http.Request) {
 
 	usersResp := make([]userResponse, 0)
 	for _, u := range users {
-		usersResp = append(usersResp, newUserResponse(u))
+		usersResp = append(usersResp, parseUserResponse(u))
 	}
 
 	render.JSON(w, r, usersResp)
@@ -183,7 +179,14 @@ func (uc UserController) getFiltered(w http.ResponseWriter, r *http.Request) {
 
 	usersResp := make([]userResponse, 0)
 	for _, u := range users {
-		usersResp = append(usersResp, newUserResponse(u))
+		usersResp = append(usersResp, userResponse{
+			ID:        fmt.Sprintf("%d", u.ID),
+			FirstName: u.FirstName,
+			LastName:  u.LastName,
+			Email:     u.Email,
+			BirthDay:  u.BirthDay.Format(dateFormat),
+			Username:  u.Username,
+		})
 	}
 
 	render.JSON(w, r, usersResp)
@@ -255,20 +258,6 @@ func (uc UserController) login(w http.ResponseWriter, r *http.Request) {
 		LastName:  user.LastName,
 		Email:     user.Email,
 		Username:  user.Username,
-		LastLogin: user.LastLogin.Time.String(),
+		LastLogin: user.LastLogin.String(),
 	})
-}
-
-func newUserResponse(user entity.User) userResponse {
-	return userResponse{
-		ID:        fmt.Sprintf("%d", user.ID),
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-		Email:     user.Email,
-		BirthDay:  user.BirthDay.Format(dateFormat),
-		Username:  user.Username,
-		LastLogin: user.LastLogin.Time.String(),
-		CreatedAt: user.CreatedAt.String(),
-		UpdatedAt: user.UpdatedAt.Time.String(),
-	}
 }

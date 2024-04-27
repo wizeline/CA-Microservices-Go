@@ -23,15 +23,9 @@ import (
 var _ UserSvc = &mocks.UserSvc{}
 
 func TestUserControlller_create(t *testing.T) {
-	type svcArgs struct {
-		user service.UserCreateArgs
-	}
-	type svcResp struct {
-		err error
-	}
 	type svc struct {
-		args svcArgs
-		resp svcResp
+		args service.UserCreateArgs
+		err  error
 	}
 	tests := []struct {
 		name     string
@@ -42,7 +36,6 @@ func TestUserControlller_create(t *testing.T) {
 	}{
 		{
 			name: "Payload empty",
-			svc:  svc{},
 			httpReq: httpRequestTest{
 				payload: []byte(""),
 			},
@@ -72,19 +65,15 @@ func TestUserControlller_create(t *testing.T) {
 		{
 			name: "Created",
 			svc: svc{
-				args: svcArgs{
-					user: service.UserCreateArgs{
-						FirstName: "foo",
-						LastName:  "baz",
-						Email:     "foo@example.com",
-						BirthDay:  time.Date(1990, time.December, 5, 0, 0, 0, 0, time.UTC),
-						Username:  "foouser",
-						Passwd:    "foopasswd",
-					},
+				args: service.UserCreateArgs{
+					FirstName: "foo",
+					LastName:  "baz",
+					Email:     "foo@example.com",
+					BirthDay:  time.Date(1990, time.December, 5, 0, 0, 0, 0, time.UTC),
+					Username:  "foouser",
+					Passwd:    "foopasswd",
 				},
-				resp: svcResp{
-					err: nil,
-				},
+				err: nil,
 			},
 			httpReq: httpRequestTest{
 				payload: []byte(`{"first_name": "foo","last_name": "baz","email": "foo@example.com", "birthday":"1990-12-05", "username": "foouser","password": "foopasswd"}`),
@@ -98,7 +87,7 @@ func TestUserControlller_create(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			mockSvc := &mocks.UserSvc{}
-			mockSvc.On("Create", test.svc.args.user).Return(test.svc.resp.err)
+			mockSvc.On("Create", test.svc.args).Return(test.svc.err)
 			ctrl := NewUserController(mockSvc)
 
 			req := httptest.NewRequest(http.MethodPost, "/users", bytes.NewBuffer(test.httpReq.payload))
@@ -119,15 +108,12 @@ func TestUserControlller_create(t *testing.T) {
 }
 
 func TestUserController_get(t *testing.T) {
-	type svcArgs struct {
-		id uint64
-	}
 	type svcResp struct {
-		user entity.User
+		user service.UserResponse
 		err  error
 	}
 	type svc struct {
-		args svcArgs
+		id   uint64
 		resp svcResp
 	}
 	tests := []struct {
@@ -139,13 +125,6 @@ func TestUserController_get(t *testing.T) {
 	}{
 		{
 			name: "Empty",
-			svc: svc{
-				args: svcArgs{id: 0},
-				resp: svcResp{
-					user: entity.User{},
-					err:  nil,
-				},
-			},
 			httpReq: httpRequestTest{
 				params: map[string]string{
 					"id": "",
@@ -162,13 +141,6 @@ func TestUserController_get(t *testing.T) {
 		},
 		{
 			name: "Invalid ID",
-			svc: svc{
-				args: svcArgs{id: 0},
-				resp: svcResp{
-					user: entity.User{},
-					err:  nil,
-				},
-			},
 			httpReq: httpRequestTest{
 				params: map[string]string{
 					"id": "badid",
@@ -186,9 +158,9 @@ func TestUserController_get(t *testing.T) {
 		{
 			name: "Valid",
 			svc: svc{
-				args: svcArgs{id: 1},
+				id: 1,
 				resp: svcResp{
-					user: entity.User{
+					user: service.UserResponse{
 						ID:        1,
 						FirstName: "foo",
 						LastName:  "baz",
@@ -203,7 +175,7 @@ func TestUserController_get(t *testing.T) {
 			},
 			httpResp: httpResponseTest{
 				code: http.StatusOK,
-				body: "{\"id\":\"1\",\"first_name\":\"foo\",\"last_name\":\"baz\",\"email\":\"\",\"birthday\":\"0001-01-01\",\"username\":\"\",\"last_login\":\"0001-01-01 00:00:00 +0000 UTC\",\"created_at\":\"0001-01-01 00:00:00 +0000 UTC\",\"updated_at\":\"0001-01-01 00:00:00 +0000 UTC\"}\n",
+				body: "{\"id\":\"1\",\"first_name\":\"foo\",\"last_name\":\"baz\",\"email\":\"\",\"birthday\":\"0001-01-01\",\"username\":\"\"}\n",
 			},
 			err: errHTTP{},
 		},
@@ -211,7 +183,7 @@ func TestUserController_get(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mockSvc := &mocks.UserSvc{}
-			mockSvc.On("Get", tt.svc.args.id).Return(tt.svc.resp.user, tt.svc.resp.err)
+			mockSvc.On("Get", tt.svc.id).Return(tt.svc.resp.user, tt.svc.resp.err)
 			ctrl := NewUserController(mockSvc)
 
 			req := httptest.NewRequest(http.MethodGet, "/users?id="+tt.httpReq.params["id"], nil)
@@ -233,25 +205,20 @@ func TestUserController_get(t *testing.T) {
 
 func TestUserController_getAll(t *testing.T) {
 	type svcResp struct {
-		users []entity.User
+		users []service.UserResponse
 		err   error
-	}
-	type svc struct {
-		resp svcResp
 	}
 	tests := []struct {
 		name     string
-		svc      svc
+		svcResp  svcResp
 		httpResp httpResponseTest
 		err      errHTTP
 	}{
 		{
 			name: "Repository error",
-			svc: svc{
-				resp: svcResp{
-					users: nil,
-					err:   &repository.Err{Err: errors.New("some repo error")},
-				},
+			svcResp: svcResp{
+				users: nil,
+				err:   &repository.Err{Err: errors.New("some repo error")},
 			},
 			httpResp: httpResponseTest{
 				code: http.StatusInternalServerError,
@@ -264,11 +231,9 @@ func TestUserController_getAll(t *testing.T) {
 		},
 		{
 			name: "Service error",
-			svc: svc{
-				resp: svcResp{
-					users: nil,
-					err:   &service.Err{Err: errors.New("some svc error")},
-				},
+			svcResp: svcResp{
+				users: nil,
+				err:   &service.Err{Err: errors.New("some svc error")},
 			},
 			httpResp: httpResponseTest{
 				code: http.StatusBadRequest,
@@ -281,11 +246,9 @@ func TestUserController_getAll(t *testing.T) {
 		},
 		{
 			name: "Valid with no records",
-			svc: svc{
-				resp: svcResp{
-					users: make([]entity.User, 0),
-					err:   nil,
-				},
+			svcResp: svcResp{
+				users: make([]service.UserResponse, 0),
+				err:   nil,
 			},
 			httpResp: httpResponseTest{
 				code: http.StatusOK,
@@ -295,19 +258,17 @@ func TestUserController_getAll(t *testing.T) {
 		},
 		{
 			name: "Valid with records",
-			svc: svc{
-				resp: svcResp{
-					users: []entity.User{
-						{ID: 1, FirstName: "foo"},
-						{ID: 2, FirstName: "bar"},
-						{ID: 3, FirstName: "baz"},
-					},
-					err: nil,
+			svcResp: svcResp{
+				users: []service.UserResponse{
+					{ID: 1, FirstName: "foo"},
+					{ID: 2, FirstName: "bar"},
+					{ID: 3, FirstName: "baz"},
 				},
+				err: nil,
 			},
 			httpResp: httpResponseTest{
 				code: http.StatusOK,
-				body: "[{\"id\":\"1\",\"first_name\":\"foo\",\"last_name\":\"\",\"email\":\"\",\"birthday\":\"0001-01-01\",\"username\":\"\",\"last_login\":\"0001-01-01 00:00:00 +0000 UTC\",\"created_at\":\"0001-01-01 00:00:00 +0000 UTC\",\"updated_at\":\"0001-01-01 00:00:00 +0000 UTC\"},{\"id\":\"2\",\"first_name\":\"bar\",\"last_name\":\"\",\"email\":\"\",\"birthday\":\"0001-01-01\",\"username\":\"\",\"last_login\":\"0001-01-01 00:00:00 +0000 UTC\",\"created_at\":\"0001-01-01 00:00:00 +0000 UTC\",\"updated_at\":\"0001-01-01 00:00:00 +0000 UTC\"},{\"id\":\"3\",\"first_name\":\"baz\",\"last_name\":\"\",\"email\":\"\",\"birthday\":\"0001-01-01\",\"username\":\"\",\"last_login\":\"0001-01-01 00:00:00 +0000 UTC\",\"created_at\":\"0001-01-01 00:00:00 +0000 UTC\",\"updated_at\":\"0001-01-01 00:00:00 +0000 UTC\"}]\n",
+				body: "[{\"id\":\"1\",\"first_name\":\"foo\",\"last_name\":\"\",\"email\":\"\",\"birthday\":\"0001-01-01\",\"username\":\"\"},{\"id\":\"2\",\"first_name\":\"bar\",\"last_name\":\"\",\"email\":\"\",\"birthday\":\"0001-01-01\",\"username\":\"\"},{\"id\":\"3\",\"first_name\":\"baz\",\"last_name\":\"\",\"email\":\"\",\"birthday\":\"0001-01-01\",\"username\":\"\"}]\n",
 			},
 			err: errHTTP{},
 		},
@@ -316,7 +277,7 @@ func TestUserController_getAll(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			mockSvc := &mocks.UserSvc{}
-			mockSvc.On("GetAll").Return(test.svc.resp.users, test.svc.resp.err)
+			mockSvc.On("GetAll").Return(test.svcResp.users, test.svcResp.err)
 			ctrl := NewUserController(mockSvc)
 
 			req := httptest.NewRequest(http.MethodGet, "/users", nil)
@@ -470,7 +431,7 @@ func TestUserController_getFiltered(t *testing.T) {
 			},
 			httpResp: httpResponseTest{
 				code: http.StatusOK,
-				body: "[{\"id\":\"0\",\"first_name\":\"foo\",\"last_name\":\"\",\"email\":\"\",\"birthday\":\"0001-01-01\",\"username\":\"\",\"last_login\":\"0001-01-01 00:00:00 +0000 UTC\",\"created_at\":\"0001-01-01 00:00:00 +0000 UTC\",\"updated_at\":\"0001-01-01 00:00:00 +0000 UTC\"},{\"id\":\"0\",\"first_name\":\"bar\",\"last_name\":\"\",\"email\":\"\",\"birthday\":\"0001-01-01\",\"username\":\"\",\"last_login\":\"0001-01-01 00:00:00 +0000 UTC\",\"created_at\":\"0001-01-01 00:00:00 +0000 UTC\",\"updated_at\":\"0001-01-01 00:00:00 +0000 UTC\"},{\"id\":\"0\",\"first_name\":\"baz\",\"last_name\":\"\",\"email\":\"\",\"birthday\":\"0001-01-01\",\"username\":\"\",\"last_login\":\"0001-01-01 00:00:00 +0000 UTC\",\"created_at\":\"0001-01-01 00:00:00 +0000 UTC\",\"updated_at\":\"0001-01-01 00:00:00 +0000 UTC\"}]\n",
+				body: "[{\"id\":\"0\",\"first_name\":\"foo\",\"last_name\":\"\",\"email\":\"\",\"birthday\":\"0001-01-01\",\"username\":\"\"},{\"id\":\"0\",\"first_name\":\"bar\",\"last_name\":\"\",\"email\":\"\",\"birthday\":\"0001-01-01\",\"username\":\"\"},{\"id\":\"0\",\"first_name\":\"baz\",\"last_name\":\"\",\"email\":\"\",\"birthday\":\"0001-01-01\",\"username\":\"\"}]\n",
 			},
 			err: errHTTP{},
 		},
@@ -499,139 +460,10 @@ func TestUserController_getFiltered(t *testing.T) {
 	}
 }
 
-// TODO: Update function for new update ser input
-// func TestUserControlller_update(t *testing.T) {
-// 	type svcArgs struct {
-// 		user entity.User
-// 	}
-// 	type svcResp struct {
-// 		err error
-// 	}
-// 	type svc struct {
-// 		args svcArgs
-// 		resp svcResp
-// 	}
-// 	tests := []struct {
-// 		name    string
-// 		svc     svc
-// 		req     httpRequestTest
-// 		resp    httpResponseTest
-// 		err     errHTTP
-// 		wantErr bool
-// 	}{
-// 		{
-// 			name: "Empty",
-// 			svc: svc{
-// 				args: svcArgs{
-// 					user: entity.User{},
-// 				},
-// 				resp: svcResp{
-// 					err: nil,
-// 				},
-// 			},
-// 			req: httpRequestTest{
-// 				payload: []byte(""),
-// 			},
-// 			resp: httpResponseTest{
-// 				code: http.StatusUnsupportedMediaType,
-// 			},
-// 			err: errHTTP{
-// 				Code:    http.StatusUnsupportedMediaType,
-// 				Status:  ctrlPayloadErrStatus,
-// 				Message: "invalid payload: EOF",
-// 			},
-// 			wantErr: true,
-// 		},
-// 		{
-// 			name: "Bad JSON",
-// 			req: httpRequestTest{
-// 				payload: []byte(`{"id": "123", "first_name": "foo","last_name": "baz","username": "foouser"`),
-// 			},
-// 			resp: httpResponseTest{
-// 				code: http.StatusUnsupportedMediaType,
-// 			},
-// 			err: errHTTP{
-// 				Code:    http.StatusUnsupportedMediaType,
-// 				Status:  ctrlPayloadErrStatus,
-// 				Message: "invalid payload: unexpected EOF",
-// 			},
-// 			wantErr: true,
-// 		},
-// 		{
-// 			name: "Bad ID",
-// 			req: httpRequestTest{
-// 				payload: []byte(`{"id": "badid", "first_name": "foo","last_name": "baz", "birthday": "1990-12-05", "username": "foouser"}`),
-// 			},
-// 			resp: httpResponseTest{
-// 				code: http.StatusUnsupportedMediaType,
-// 			},
-// 			err: errHTTP{
-// 				Code:    http.StatusUnsupportedMediaType,
-// 				Status:  ctrlPayloadErrStatus,
-// 				Message: "invalid payload: strconv.ParseUint: parsing \"badid\": invalid syntax",
-// 			},
-// 			wantErr: true,
-// 		},
-// 		{
-// 			name: "Updated",
-// 			svc: svc{
-// 				args: svcArgs{
-// 					user: entity.User{
-// 						ID:        123,
-// 						FirstName: "foo",
-// 						LastName:  "baz",
-// 						BirthDay:  time.Date(1990, time.December, 5, 0, 0, 0, 0, time.UTC),
-// 						Username:  "foouser",
-// 					},
-// 				},
-// 				resp: svcResp{
-// 					err: nil,
-// 				},
-// 			},
-// 			req: httpRequestTest{
-// 				payload: []byte(`{"id": "123", "first_name": "foo","last_name": "baz", "birthday": "1990-12-05", "username": "foouser"}`),
-// 			},
-// 			resp: httpResponseTest{
-// 				code: http.StatusOK,
-// 				body: "{\"message\":\"user 123 updated successfully\"}\n",
-// 			},
-// 			wantErr: false,
-// 		},
-// 	}
-
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			mock := &mocks.UserSvc{}
-// 			mock.On("Update", tt.svc.args.user).Return(tt.svc.resp.err)
-// 			ctrl := NewUserController(mock)
-
-// 			req := httptest.NewRequest(http.MethodPost, "/users", bytes.NewBuffer(tt.req.payload))
-// 			rec := httptest.NewRecorder()
-
-// 			ctrl.update(rec, req)
-
-// 			assert.Equal(t, rec.Code, tt.resp.code)
-// 			if tt.wantErr {
-// 				var errMsg errHTTP
-// 				require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &errMsg))
-// 				assert.Equal(t, tt.err, errMsg)
-// 				return
-// 			}
-// 			assert.Equal(t, tt.resp.body, rec.Body.String())
-// 		})
-// 	}
-// }
-
-func TestUserControlller_delete(t *testing.T) {
-	type svcArgs struct {
-		id uint64
-	}
-	type svcResp struct {
-		err error
-	}
+func TestUserControlller_update(t *testing.T) {
 	type svc struct {
-		args svcArgs
-		resp svcResp
+		args service.UserUpdateArgs
+		err  error
 	}
 	tests := []struct {
 		name     string
@@ -642,14 +474,104 @@ func TestUserControlller_delete(t *testing.T) {
 	}{
 		{
 			name: "Empty",
-			svc: svc{
-				args: svcArgs{
-					id: 0,
-				},
-				resp: svcResp{
-					err: nil,
-				},
+			httpReq: httpRequestTest{
+				payload: []byte(""),
 			},
+			httpResp: httpResponseTest{
+				code: http.StatusUnsupportedMediaType,
+			},
+			err: errHTTP{
+				Code:    http.StatusUnsupportedMediaType,
+				Status:  ctrlPayloadErrStatus,
+				Message: "invalid payload: EOF",
+			},
+		},
+		{
+			name: "Bad JSON",
+			httpReq: httpRequestTest{
+				payload: []byte(`{"id": "123", "first_name": "foo","last_name": "baz","username": "foouser"`),
+			},
+			httpResp: httpResponseTest{
+				code: http.StatusUnsupportedMediaType,
+			},
+			err: errHTTP{
+				Code:    http.StatusUnsupportedMediaType,
+				Status:  ctrlPayloadErrStatus,
+				Message: "invalid payload: unexpected EOF",
+			},
+		},
+		{
+			name: "Bad ID",
+			httpReq: httpRequestTest{
+				payload: []byte(`{"id": "badid", "first_name": "foo","last_name": "baz", "birthday": "1990-12-05", "username": "foouser"}`),
+			},
+			httpResp: httpResponseTest{
+				code: http.StatusUnsupportedMediaType,
+			},
+			err: errHTTP{
+				Code:    http.StatusUnsupportedMediaType,
+				Status:  ctrlPayloadErrStatus,
+				Message: "invalid payload: strconv.ParseUint: parsing \"badid\": invalid syntax",
+			},
+		},
+		{
+			name: "Updated",
+			svc: svc{
+				args: service.UserUpdateArgs{
+					ID:        123,
+					FirstName: "foo",
+					LastName:  "baz",
+					BirthDay:  time.Date(1990, time.December, 5, 0, 0, 0, 0, time.UTC),
+				},
+				err: nil,
+			},
+			httpReq: httpRequestTest{
+				payload: []byte(`{"id": "123", "first_name": "foo","last_name": "baz", "birthday": "1990-12-05", "username": "foouser"}`),
+			},
+			httpResp: httpResponseTest{
+				code: http.StatusOK,
+				body: "{\"message\":\"user 123 updated successfully\"}\n",
+			},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mockSvc := &mocks.UserSvc{}
+			mockSvc.On("Update", test.svc.args).Return(test.svc.err)
+			ctrl := NewUserController(mockSvc)
+
+			req := httptest.NewRequest(http.MethodPost, "/users", bytes.NewBuffer(test.httpReq.payload))
+			rec := httptest.NewRecorder()
+
+			ctrl.update(rec, req)
+
+			assert.Equal(t, rec.Code, test.httpResp.code)
+			if test.err != (errHTTP{}) {
+				var errMsg errHTTP
+				require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &errMsg))
+				assert.Equal(t, test.err, errMsg)
+				return
+			}
+			assert.Equal(t, test.httpResp.body, rec.Body.String())
+		})
+	}
+}
+
+func TestUserControlller_delete(t *testing.T) {
+	type svc struct {
+		id  uint64
+		err error
+	}
+	tests := []struct {
+		name     string
+		svc      svc
+		httpReq  httpRequestTest
+		httpResp httpResponseTest
+		err      errHTTP
+	}{
+		{
+			name: "Empty",
 			httpReq: httpRequestTest{
 				params: map[string]string{
 					"id": "",
@@ -666,14 +588,6 @@ func TestUserControlller_delete(t *testing.T) {
 		},
 		{
 			name: "Bad ID",
-			svc: svc{
-				args: svcArgs{
-					id: 0,
-				},
-				resp: svcResp{
-					err: nil,
-				},
-			},
 			httpReq: httpRequestTest{
 				params: map[string]string{
 					"id": "badid",
@@ -691,12 +605,8 @@ func TestUserControlller_delete(t *testing.T) {
 		{
 			name: "Deleted",
 			svc: svc{
-				args: svcArgs{
-					id: 123,
-				},
-				resp: svcResp{
-					err: nil,
-				},
+				id:  123,
+				err: nil,
 			},
 			httpReq: httpRequestTest{
 				params: map[string]string{
@@ -714,7 +624,7 @@ func TestUserControlller_delete(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			mockSvc := &mocks.UserSvc{}
-			mockSvc.On("Delete", test.svc.args.id).Return(test.svc.resp.err)
+			mockSvc.On("Delete", test.svc.id).Return(test.svc.err)
 			ctrl := NewUserController(mockSvc)
 
 			req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/users?id=%v", test.httpReq.params["id"]), nil)
@@ -740,7 +650,7 @@ func TestUserControlller_login(t *testing.T) {
 		passwd   string
 	}
 	type svcResp struct {
-		user entity.User
+		user service.UserLoginResponse
 		err  error
 	}
 	type svc struct {
@@ -791,7 +701,7 @@ func TestUserControlller_login(t *testing.T) {
 					passwd:   "some-password",
 				},
 				resp: svcResp{
-					user: entity.User{},
+					user: service.UserLoginResponse{},
 					err:  &repository.Err{Err: errors.New("some repository error")},
 				},
 			},
@@ -815,7 +725,7 @@ func TestUserControlller_login(t *testing.T) {
 					passwd:   "some-password",
 				},
 				resp: svcResp{
-					user: entity.User{},
+					user: service.UserLoginResponse{},
 					err:  &service.Err{Err: errors.New("some service error")},
 				},
 			},
@@ -839,13 +749,12 @@ func TestUserControlller_login(t *testing.T) {
 					passwd:   "foopasswd",
 				},
 				resp: svcResp{
-					user: entity.User{
+					user: service.UserLoginResponse{
+						ID:        1,
 						FirstName: "foo",
 						LastName:  "baz",
 						Email:     "foo@example.com",
-						BirthDay:  time.Date(1990, time.December, 5, 0, 0, 0, 0, time.UTC),
 						Username:  "foouser",
-						Passwd:    "foopasswd",
 					},
 					err: nil,
 				},
@@ -855,7 +764,7 @@ func TestUserControlller_login(t *testing.T) {
 			},
 			httpResp: httpResponseTest{
 				code: http.StatusOK,
-				body: "{\"id\":\"0\",\"first_name\":\"foo\",\"last_name\":\"baz\",\"email\":\"foo@example.com\",\"username\":\"foouser\",\"last_login\":\"0001-01-01 00:00:00 +0000 UTC\"}\n",
+				body: "{\"id\":\"1\",\"first_name\":\"foo\",\"last_name\":\"baz\",\"email\":\"foo@example.com\",\"username\":\"foouser\",\"last_login\":\"0001-01-01 00:00:00 +0000 UTC\"}\n",
 			},
 		},
 	}
