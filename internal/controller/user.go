@@ -14,10 +14,11 @@ import (
 	"github.com/go-chi/render"
 )
 
+// We guarantee that the requirements of the HTTP controller are met
 var _ HTTP = &UserController{}
 
-// userCreateReq represents the data transfer object requested for creating a user.
-type userCreateReq struct {
+// userCreateRequest represents the data transfer object requested for creating a user
+type userCreateRequest struct {
 	FirstName string `json:"first_name"`
 	LastName  string `json:"last_name"`
 	Email     string `json:"email"`
@@ -26,8 +27,8 @@ type userCreateReq struct {
 	Passwd    string `json:"password"`
 }
 
-// userUpdateReq represents the data transfer object requested for updating a user.
-type userUpdateReq struct {
+// userUpdateRequest represents the data transfer object requested for updating a user
+type userUpdateRequest struct {
 	ID        string `json:"id"`
 	FirstName string `json:"first_name"`
 	LastName  string `json:"last_name"`
@@ -35,6 +36,7 @@ type userUpdateReq struct {
 	Username  string `json:"username"`
 }
 
+// userResponse represents the data transfer object response for a default user
 type userResponse struct {
 	ID        string `json:"id"`
 	FirstName string `json:"first_name"`
@@ -42,19 +44,15 @@ type userResponse struct {
 	Email     string `json:"email"`
 	BirthDay  string `json:"birthday"`
 	Username  string `json:"username"`
-	LastLogin string `json:"last_login"`
-
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
 }
 
-// userLoginReq represents the data transfer object requested for login a user.
-type userLoginReq struct {
+// userLoginRequest represents the data transfer object requested for login a user
+type userLoginRequest struct {
 	Username string `json:"username"`
 	Passwd   string `json:"password"`
 }
 
-// userLoginResponse represents the data transfer object response for a logged user.
+// userLoginResponse represents the data transfer object response for a logged user
 type userLoginResponse struct {
 	ID        string `json:"id"`
 	FirstName string `json:"first_name"`
@@ -64,10 +62,11 @@ type userLoginResponse struct {
 	LastLogin string `json:"last_login"`
 }
 
-type UserSvc interface {
+// UserService is an abstraction of the UserService dependecy used by the UserController
+type UserService interface {
 	Create(args service.UserCreateArgs) error
-	Get(id uint64) (entity.User, error)
-	GetAll() ([]entity.User, error)
+	Get(id uint64) (service.UserResponse, error)
+	GetAll() ([]service.UserResponse, error)
 	Find(filter, value string) ([]entity.User, error)
 	Update(args service.UserUpdateArgs) error
 	Delete(id uint64) error
@@ -76,19 +75,22 @@ type UserSvc interface {
 	ChangeEmail(id uint64, email string) error
 	ChangePasswd(id uint64, passwd string) error
 	IsActive(id uint64) (bool, error)
-	ValidateLogin(username string, passwd string) (entity.User, error)
+	ValidateLogin(username string, passwd string) (service.UserLoginResponse, error)
 }
 
+// UserController is the user controller representation.
 type UserController struct {
-	svc UserSvc
+	svc UserService
 }
 
-func NewUserController(svc UserSvc) UserController {
+// NewUserController returns a new UserController implementation.
+func NewUserController(svc UserService) UserController {
 	return UserController{
 		svc: svc,
 	}
 }
 
+// SetRoutes sets a fresh middleware stack to configure the handle functions of UserController and mounts them to the given subrouter.
 func (uc UserController) SetRoutes(r chi.Router) {
 	r.Post("/users", uc.create)
 	r.Get("/user", uc.get)
@@ -101,7 +103,7 @@ func (uc UserController) SetRoutes(r chi.Router) {
 }
 
 func (uc UserController) create(w http.ResponseWriter, r *http.Request) {
-	var dto userCreateReq
+	var dto userCreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
 		errJSON(w, r, &PayloadErr{err})
 		return
@@ -146,7 +148,7 @@ func (uc UserController) get(w http.ResponseWriter, r *http.Request) {
 		errJSON(w, r, err)
 		return
 	}
-	render.JSON(w, r, newUserResponse(user))
+	render.JSON(w, r, parseUserResponse(user))
 }
 
 func (uc UserController) getAll(w http.ResponseWriter, r *http.Request) {
@@ -158,7 +160,7 @@ func (uc UserController) getAll(w http.ResponseWriter, r *http.Request) {
 
 	usersResp := make([]userResponse, 0)
 	for _, u := range users {
-		usersResp = append(usersResp, newUserResponse(u))
+		usersResp = append(usersResp, parseUserResponse(u))
 	}
 
 	render.JSON(w, r, usersResp)
@@ -183,14 +185,21 @@ func (uc UserController) getFiltered(w http.ResponseWriter, r *http.Request) {
 
 	usersResp := make([]userResponse, 0)
 	for _, u := range users {
-		usersResp = append(usersResp, newUserResponse(u))
+		usersResp = append(usersResp, userResponse{
+			ID:        fmt.Sprintf("%d", u.ID),
+			FirstName: u.FirstName,
+			LastName:  u.LastName,
+			Email:     u.Email,
+			BirthDay:  u.BirthDay.Format(dateFormat),
+			Username:  u.Username,
+		})
 	}
 
 	render.JSON(w, r, usersResp)
 }
 
 func (uc UserController) update(w http.ResponseWriter, r *http.Request) {
-	var dto userUpdateReq
+	var dto userUpdateRequest
 	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
 		errJSON(w, r, &PayloadErr{err})
 		return
@@ -237,7 +246,7 @@ func (uc UserController) delete(w http.ResponseWriter, r *http.Request) {
 }
 
 func (uc UserController) login(w http.ResponseWriter, r *http.Request) {
-	var dto userLoginReq
+	var dto userLoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
 		errJSON(w, r, &PayloadErr{err})
 		return
@@ -255,20 +264,6 @@ func (uc UserController) login(w http.ResponseWriter, r *http.Request) {
 		LastName:  user.LastName,
 		Email:     user.Email,
 		Username:  user.Username,
-		LastLogin: user.LastLogin.Time.String(),
+		LastLogin: user.LastLogin.String(),
 	})
-}
-
-func newUserResponse(user entity.User) userResponse {
-	return userResponse{
-		ID:        fmt.Sprintf("%d", user.ID),
-		FirstName: user.FirstName,
-		LastName:  user.LastName,
-		Email:     user.Email,
-		BirthDay:  user.BirthDay.Format(dateFormat),
-		Username:  user.Username,
-		LastLogin: user.LastLogin.Time.String(),
-		CreatedAt: user.CreatedAt.String(),
-		UpdatedAt: user.UpdatedAt.Time.String(),
-	}
 }

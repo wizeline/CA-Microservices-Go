@@ -1,5 +1,7 @@
 package service
 
+import "github.com/wizeline/CA-Microservices-Go/internal/entity"
+
 func validateUserCreate(u UserCreateArgs) error {
 	if u == (UserCreateArgs{}) {
 		return ErrEmptyArgs
@@ -48,5 +50,16 @@ func validateUserFilter(filter string) error {
 		return nil
 	default:
 		return &InvalidFilterErr{Filter: filter, Err: ErrNotSupported}
+	}
+}
+
+func parseUserResp(user entity.User) UserResponse {
+	return UserResponse{
+		ID:        user.ID,
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
+		Email:     user.Email,
+		BirthDay:  user.BirthDay,
+		Username:  user.Username,
 	}
 }

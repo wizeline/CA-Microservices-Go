@@ -135,22 +135,22 @@ func (_m *UserSvc) Find(filter string, value string) ([]entity.User, error) {
 }
 
 // Get provides a mock function with given fields: id
-func (_m *UserSvc) Get(id uint64) (entity.User, error) {
+func (_m *UserSvc) Get(id uint64) (service.UserResponse, error) {
 	ret := _m.Called(id)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Get")
 	}
 
-	var r0 entity.User
+	var r0 service.UserResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func(uint64) (entity.User, error)); ok {
+	if rf, ok := ret.Get(0).(func(uint64) (service.UserResponse, error)); ok {
 		return rf(id)
 	}
-	if rf, ok := ret.Get(0).(func(uint64) entity.User); ok {
+	if rf, ok := ret.Get(0).(func(uint64) service.UserResponse); ok {
 		r0 = rf(id)
 	} else {
-		r0 = ret.Get(0).(entity.User)
+		r0 = ret.Get(0).(service.UserResponse)
 	}
 
 	if rf, ok := ret.Get(1).(func(uint64) error); ok {
@@ -163,23 +163,23 @@ func (_m *UserSvc) Get(id uint64) (entity.User, error) {
 }
 
 // GetAll provides a mock function with given fields:
-func (_m *UserSvc) GetAll() ([]entity.User, error) {
+func (_m *UserSvc) GetAll() ([]service.UserResponse, error) {
 	ret := _m.Called()
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetAll")
 	}
 
-	var r0 []entity.User
+	var r0 []service.UserResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func() ([]entity.User, error)); ok {
+	if rf, ok := ret.Get(0).(func() ([]service.UserResponse, error)); ok {
 		return rf()
 	}
-	if rf, ok := ret.Get(0).(func() []entity.User); ok {
+	if rf, ok := ret.Get(0).(func() []service.UserResponse); ok {
 		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]entity.User)
+			r0 = ret.Get(0).([]service.UserResponse)
 		}
 	}
 
@@ -239,22 +239,22 @@ func (_m *UserSvc) Update(args service.UserUpdateArgs) error {
 }
 
 // ValidateLogin provides a mock function with given fields: username, passwd
-func (_m *UserSvc) ValidateLogin(username string, passwd string) (entity.User, error) {
+func (_m *UserSvc) ValidateLogin(username string, passwd string) (service.UserLoginResponse, error) {
 	ret := _m.Called(username, passwd)
 
 	if len(ret) == 0 {
 		panic("no return value specified for ValidateLogin")
 	}
 
-	var r0 entity.User
+	var r0 service.UserLoginResponse
 	var r1 error
-	if rf, ok := ret.Get(0).(func(string, string) (entity.User, error)); ok {
+	if rf, ok := ret.Get(0).(func(string, string) (service.UserLoginResponse, error)); ok {
 		return rf(username, passwd)
 	}
-	if rf, ok := ret.Get(0).(func(string, string) entity.User); ok {
+	if rf, ok := ret.Get(0).(func(string, string) service.UserLoginResponse); ok {
 		r0 = rf(username, passwd)
 	} else {
-		r0 = ret.Get(0).(entity.User)
+		r0 = ret.Get(0).(service.UserLoginResponse)
 	}
 
 	if rf, ok := ret.Get(1).(func(string, string) error); ok {

@@ -15,6 +15,15 @@ type UserRepo interface {
 	Delete(id uint64) error
 }
 
+type UserResponse struct {
+	ID        uint64
+	FirstName string
+	LastName  string
+	Email     string
+	BirthDay  time.Time
+	Username  string
+}
+
 type UserCreateArgs struct {
 	FirstName string
 	LastName  string
@@ -29,6 +38,15 @@ type UserUpdateArgs struct {
 	FirstName string
 	LastName  string
 	BirthDay  time.Time
+}
+
+type UserLoginResponse struct {
+	ID        uint64
+	FirstName string
+	LastName  string
+	Email     string
+	Username  string
+	LastLogin time.Time
 }
 
 type UserService struct {
@@ -59,15 +77,29 @@ func (s UserService) Create(args UserCreateArgs) error {
 	})
 }
 
-func (s UserService) Get(id uint64) (entity.User, error) {
+func (s UserService) Get(id uint64) (UserResponse, error) {
 	if id == 0 {
-		return entity.User{}, ErrZeroValue
+		return UserResponse{}, ErrZeroValue
 	}
-	return s.repo.Read(id)
+
+	user, err := s.repo.Read(id)
+	if err != nil {
+		return UserResponse{}, err
+	}
+	return parseUserResp(user), nil
 }
 
-func (s UserService) GetAll() ([]entity.User, error) {
-	return s.repo.ReadAll()
+func (s UserService) GetAll() ([]UserResponse, error) {
+	users, err := s.repo.ReadAll()
+	if err != nil {
+		return nil, err
+	}
+
+	usersResp := make([]UserResponse, 0)
+	for _, u := range users {
+		usersResp = append(usersResp, parseUserResp(u))
+	}
+	return usersResp, nil
 }
 
 func (s UserService) Find(filter, value string) ([]entity.User, error) {
@@ -185,22 +217,30 @@ func (s UserService) IsActive(id uint64) (bool, error) {
 	return user.Active, nil
 }
 
-func (s UserService) ValidateLogin(username string, passwd string) (entity.User, error) {
+func (s UserService) ValidateLogin(username string, passwd string) (UserLoginResponse, error) {
 	if username == "" {
-		return entity.User{}, &InvalidInputErr{Field: "username", Err: ErrEmptyValue}
+		return UserLoginResponse{}, &InvalidInputErr{Field: "username", Err: ErrEmptyValue}
 	}
 	if err := validateUserPasswd(passwd); err != nil {
-		return entity.User{}, err
+		return UserLoginResponse{}, err
 	}
 	users, err := s.Find("Username", username)
 	if err != nil {
-		return entity.User{}, err
+		return UserLoginResponse{}, err
 	}
 	if total := len(users); total != 1 {
-		return entity.User{}, fmt.Errorf("expected one user got %d", total)
+		return UserLoginResponse{}, fmt.Errorf("expected one user got %d", total)
 	}
 	if err := compareHashAndPassword(users[0].Passwd, passwd); err != nil {
-		return entity.User{}, ErrPasswdDoNotMatch
+		return UserLoginResponse{}, ErrPasswdDoNotMatch
 	}
-	return users[0], nil
+
+	return UserLoginResponse{
+		ID:        users[0].ID,
+		FirstName: users[0].FirstName,
+		LastName:  users[0].LastName,
+		Email:     users[0].Email,
+		Username:  users[0].Username,
+		LastLogin: users[0].LastLogin.Time,
+	}, nil
 }
