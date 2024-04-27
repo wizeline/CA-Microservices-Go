@@ -89,8 +89,6 @@ func newErrHTTP(err error) errHTTP {
 
 	// ########### CONTROLLER ERRORS ###########
 
-	// TODO: Implement the rest of the controllers errors
-
 	case errors.As(err, &ctrlParamErr):
 		return errHTTP{
 			Code:    http.StatusBadRequest,

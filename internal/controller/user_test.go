@@ -19,8 +19,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// We ensure the UserSvc mock object satisfies the UserSvc signature.
-var _ UserSvc = &mocks.UserSvc{}
+// We ensure the UserSvc mock object satisfies the UserService dependency signature.
+var _ UserService = &mocks.UserSvc{}
 
 func TestUserControlller_create(t *testing.T) {
 	type svc struct {

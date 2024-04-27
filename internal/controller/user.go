@@ -14,10 +14,11 @@ import (
 	"github.com/go-chi/render"
 )
 
+// We guarantee that the requirements of the HTTP controller are met
 var _ HTTP = &UserController{}
 
-// userCreateReq represents the data transfer object requested for creating a user.
-type userCreateReq struct {
+// userCreateRequest represents the data transfer object requested for creating a user
+type userCreateRequest struct {
 	FirstName string `json:"first_name"`
 	LastName  string `json:"last_name"`
 	Email     string `json:"email"`
@@ -26,8 +27,8 @@ type userCreateReq struct {
 	Passwd    string `json:"password"`
 }
 
-// userUpdateReq represents the data transfer object requested for updating a user.
-type userUpdateReq struct {
+// userUpdateRequest represents the data transfer object requested for updating a user
+type userUpdateRequest struct {
 	ID        string `json:"id"`
 	FirstName string `json:"first_name"`
 	LastName  string `json:"last_name"`
@@ -35,6 +36,7 @@ type userUpdateReq struct {
 	Username  string `json:"username"`
 }
 
+// userResponse represents the data transfer object response for a default user
 type userResponse struct {
 	ID        string `json:"id"`
 	FirstName string `json:"first_name"`
@@ -44,13 +46,13 @@ type userResponse struct {
 	Username  string `json:"username"`
 }
 
-// userLoginReq represents the data transfer object requested for login a user.
-type userLoginReq struct {
+// userLoginRequest represents the data transfer object requested for login a user
+type userLoginRequest struct {
 	Username string `json:"username"`
 	Passwd   string `json:"password"`
 }
 
-// userLoginResponse represents the data transfer object response for a logged user.
+// userLoginResponse represents the data transfer object response for a logged user
 type userLoginResponse struct {
 	ID        string `json:"id"`
 	FirstName string `json:"first_name"`
@@ -60,7 +62,8 @@ type userLoginResponse struct {
 	LastLogin string `json:"last_login"`
 }
 
-type UserSvc interface {
+// UserService is an abstraction of the UserService dependecy used by the UserController
+type UserService interface {
 	Create(args service.UserCreateArgs) error
 	Get(id uint64) (service.UserResponse, error)
 	GetAll() ([]service.UserResponse, error)
@@ -75,16 +78,19 @@ type UserSvc interface {
 	ValidateLogin(username string, passwd string) (service.UserLoginResponse, error)
 }
 
+// UserController is the user controller representation.
 type UserController struct {
-	svc UserSvc
+	svc UserService
 }
 
-func NewUserController(svc UserSvc) UserController {
+// NewUserController returns a new UserController implementation.
+func NewUserController(svc UserService) UserController {
 	return UserController{
 		svc: svc,
 	}
 }
 
+// SetRoutes sets a fresh middleware stack to configure the handle functions of UserController and mounts them to the given subrouter.
 func (uc UserController) SetRoutes(r chi.Router) {
 	r.Post("/users", uc.create)
 	r.Get("/user", uc.get)
@@ -97,7 +103,7 @@ func (uc UserController) SetRoutes(r chi.Router) {
 }
 
 func (uc UserController) create(w http.ResponseWriter, r *http.Request) {
-	var dto userCreateReq
+	var dto userCreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
 		errJSON(w, r, &PayloadErr{err})
 		return
@@ -193,7 +199,7 @@ func (uc UserController) getFiltered(w http.ResponseWriter, r *http.Request) {
 }
 
 func (uc UserController) update(w http.ResponseWriter, r *http.Request) {
-	var dto userUpdateReq
+	var dto userUpdateRequest
 	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
 		errJSON(w, r, &PayloadErr{err})
 		return
@@ -240,7 +246,7 @@ func (uc UserController) delete(w http.ResponseWriter, r *http.Request) {
 }
 
 func (uc UserController) login(w http.ResponseWriter, r *http.Request) {
-	var dto userLoginReq
+	var dto userLoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
 		errJSON(w, r, &PayloadErr{err})
 		return
