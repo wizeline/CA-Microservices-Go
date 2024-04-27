@@ -34,20 +34,19 @@ func TestUserControlller_create(t *testing.T) {
 		resp svcResp
 	}
 	tests := []struct {
-		name    string
-		svc     svc
-		req     httpRequestTest
-		resp    httpResponseTest
-		err     errHTTP
-		wantErr bool
+		name     string
+		svc      svc
+		httpReq  httpRequestTest
+		httpResp httpResponseTest
+		err      errHTTP
 	}{
 		{
 			name: "Payload empty",
 			svc:  svc{},
-			req: httpRequestTest{
+			httpReq: httpRequestTest{
 				payload: []byte(""),
 			},
-			resp: httpResponseTest{
+			httpResp: httpResponseTest{
 				code: http.StatusUnsupportedMediaType,
 			},
 			err: errHTTP{
@@ -55,14 +54,13 @@ func TestUserControlller_create(t *testing.T) {
 				Status:  ctrlPayloadErrStatus,
 				Message: "invalid payload: EOF",
 			},
-			wantErr: true,
 		},
 		{
 			name: "Bad JSON",
-			req: httpRequestTest{
+			httpReq: httpRequestTest{
 				payload: []byte(`{"first_name": "foo","last_name": "baz","username": "foouser"`),
 			},
-			resp: httpResponseTest{
+			httpResp: httpResponseTest{
 				code: http.StatusUnsupportedMediaType,
 			},
 			err: errHTTP{
@@ -70,7 +68,6 @@ func TestUserControlller_create(t *testing.T) {
 				Status:  ctrlPayloadErrStatus,
 				Message: "invalid payload: unexpected EOF",
 			},
-			wantErr: true,
 		},
 		{
 			name: "Created",
@@ -89,35 +86,34 @@ func TestUserControlller_create(t *testing.T) {
 					err: nil,
 				},
 			},
-			req: httpRequestTest{
+			httpReq: httpRequestTest{
 				payload: []byte(`{"first_name": "foo","last_name": "baz","email": "foo@example.com", "birthday":"1990-12-05", "username": "foouser","password": "foopasswd"}`),
 			},
-			resp: httpResponseTest{
+			httpResp: httpResponseTest{
 				code: http.StatusCreated,
 				body: "{\"message\":\"user created successfully\"}\n",
 			},
-			wantErr: false,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mock := &mocks.UserSvc{}
-			mock.On("Create", tt.svc.args.user).Return(tt.svc.resp.err)
-			ctrl := NewUserController(mock)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mockSvc := &mocks.UserSvc{}
+			mockSvc.On("Create", test.svc.args.user).Return(test.svc.resp.err)
+			ctrl := NewUserController(mockSvc)
 
-			req := httptest.NewRequest(http.MethodPost, "/users", bytes.NewBuffer(tt.req.payload))
+			req := httptest.NewRequest(http.MethodPost, "/users", bytes.NewBuffer(test.httpReq.payload))
 			rec := httptest.NewRecorder()
 
 			ctrl.create(rec, req)
 
-			assert.Equal(t, rec.Code, tt.resp.code)
-			if tt.wantErr {
+			assert.Equal(t, rec.Code, test.httpResp.code)
+			if test.err != (errHTTP{}) {
 				var errMsg errHTTP
 				require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &errMsg))
-				assert.Equal(t, tt.err, errMsg)
+				assert.Equal(t, test.err, errMsg)
 				return
 			}
-			assert.Equal(t, tt.resp.body, rec.Body.String())
+			assert.Equal(t, test.httpResp.body, rec.Body.String())
 		})
 	}
 }
@@ -135,12 +131,11 @@ func TestUserController_get(t *testing.T) {
 		resp svcResp
 	}
 	tests := []struct {
-		name    string
-		svc     svc
-		req     httpRequestTest
-		resp    httpResponseTest
-		err     errHTTP
-		wantErr bool
+		name     string
+		svc      svc
+		httpReq  httpRequestTest
+		httpResp httpResponseTest
+		err      errHTTP
 	}{
 		{
 			name: "Empty",
@@ -151,12 +146,12 @@ func TestUserController_get(t *testing.T) {
 					err:  nil,
 				},
 			},
-			req: httpRequestTest{
+			httpReq: httpRequestTest{
 				params: map[string]string{
 					"id": "",
 				},
 			},
-			resp: httpResponseTest{
+			httpResp: httpResponseTest{
 				code: http.StatusBadRequest,
 			},
 			err: errHTTP{
@@ -164,7 +159,6 @@ func TestUserController_get(t *testing.T) {
 				Status:  ctrlParamErrStatus,
 				Message: "invalid id parameter: empty value",
 			},
-			wantErr: true,
 		},
 		{
 			name: "Invalid ID",
@@ -175,12 +169,12 @@ func TestUserController_get(t *testing.T) {
 					err:  nil,
 				},
 			},
-			req: httpRequestTest{
+			httpReq: httpRequestTest{
 				params: map[string]string{
 					"id": "badid",
 				},
 			},
-			resp: httpResponseTest{
+			httpResp: httpResponseTest{
 				code: http.StatusBadRequest,
 			},
 			err: errHTTP{
@@ -188,7 +182,6 @@ func TestUserController_get(t *testing.T) {
 				Status:  ctrlParamErrStatus,
 				Message: "invalid id parameter: strconv.ParseUint: parsing \"badid\": invalid syntax",
 			},
-			wantErr: true,
 		},
 		{
 			name: "Valid",
@@ -203,38 +196,37 @@ func TestUserController_get(t *testing.T) {
 					err: nil,
 				},
 			},
-			req: httpRequestTest{
+			httpReq: httpRequestTest{
 				params: map[string]string{
 					"id": "1",
 				},
 			},
-			resp: httpResponseTest{
+			httpResp: httpResponseTest{
 				code: http.StatusOK,
 				body: "{\"id\":\"1\",\"first_name\":\"foo\",\"last_name\":\"baz\",\"email\":\"\",\"birthday\":\"0001-01-01\",\"username\":\"\",\"last_login\":\"0001-01-01 00:00:00 +0000 UTC\",\"created_at\":\"0001-01-01 00:00:00 +0000 UTC\",\"updated_at\":\"0001-01-01 00:00:00 +0000 UTC\"}\n",
 			},
-			err:     errHTTP{},
-			wantErr: false,
+			err: errHTTP{},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mock := &mocks.UserSvc{}
-			mock.On("Get", tt.svc.args.id).Return(tt.svc.resp.user, tt.svc.resp.err)
-			ctrl := NewUserController(mock)
+			mockSvc := &mocks.UserSvc{}
+			mockSvc.On("Get", tt.svc.args.id).Return(tt.svc.resp.user, tt.svc.resp.err)
+			ctrl := NewUserController(mockSvc)
 
-			req := httptest.NewRequest(http.MethodGet, "/users?id="+tt.req.params["id"], nil)
+			req := httptest.NewRequest(http.MethodGet, "/users?id="+tt.httpReq.params["id"], nil)
 			rec := httptest.NewRecorder()
 
 			ctrl.get(rec, req)
 
-			assert.Equal(t, rec.Code, tt.resp.code)
-			if tt.wantErr {
+			assert.Equal(t, rec.Code, tt.httpResp.code)
+			if tt.err != (errHTTP{}) {
 				var errMsg errHTTP
 				require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &errMsg))
 				assert.Equal(t, tt.err, errMsg)
 				return
 			}
-			assert.Equal(t, tt.resp.body, rec.Body.String())
+			assert.Equal(t, tt.httpResp.body, rec.Body.String())
 		})
 	}
 }
@@ -248,11 +240,10 @@ func TestUserController_getAll(t *testing.T) {
 		resp svcResp
 	}
 	tests := []struct {
-		name    string
-		svc     svc
-		resp    httpResponseTest
-		err     errHTTP
-		wantErr bool
+		name     string
+		svc      svc
+		httpResp httpResponseTest
+		err      errHTTP
 	}{
 		{
 			name: "Repository error",
@@ -262,7 +253,7 @@ func TestUserController_getAll(t *testing.T) {
 					err:   &repository.Err{Err: errors.New("some repo error")},
 				},
 			},
-			resp: httpResponseTest{
+			httpResp: httpResponseTest{
 				code: http.StatusInternalServerError,
 			},
 			err: errHTTP{
@@ -270,7 +261,6 @@ func TestUserController_getAll(t *testing.T) {
 				Status:  repoErrStatus,
 				Message: "repository: some repo error",
 			},
-			wantErr: true,
 		},
 		{
 			name: "Service error",
@@ -280,7 +270,7 @@ func TestUserController_getAll(t *testing.T) {
 					err:   &service.Err{Err: errors.New("some svc error")},
 				},
 			},
-			resp: httpResponseTest{
+			httpResp: httpResponseTest{
 				code: http.StatusBadRequest,
 			},
 			err: errHTTP{
@@ -288,7 +278,6 @@ func TestUserController_getAll(t *testing.T) {
 				Status:  svcErrStatus,
 				Message: "service: some svc error",
 			},
-			wantErr: true,
 		},
 		{
 			name: "Valid with no records",
@@ -298,12 +287,11 @@ func TestUserController_getAll(t *testing.T) {
 					err:   nil,
 				},
 			},
-			resp: httpResponseTest{
+			httpResp: httpResponseTest{
 				code: http.StatusOK,
 				body: "[]\n",
 			},
-			err:     errHTTP{},
-			wantErr: false,
+			err: errHTTP{},
 		},
 		{
 			name: "Valid with records",
@@ -317,34 +305,33 @@ func TestUserController_getAll(t *testing.T) {
 					err: nil,
 				},
 			},
-			resp: httpResponseTest{
+			httpResp: httpResponseTest{
 				code: http.StatusOK,
 				body: "[{\"id\":\"1\",\"first_name\":\"foo\",\"last_name\":\"\",\"email\":\"\",\"birthday\":\"0001-01-01\",\"username\":\"\",\"last_login\":\"0001-01-01 00:00:00 +0000 UTC\",\"created_at\":\"0001-01-01 00:00:00 +0000 UTC\",\"updated_at\":\"0001-01-01 00:00:00 +0000 UTC\"},{\"id\":\"2\",\"first_name\":\"bar\",\"last_name\":\"\",\"email\":\"\",\"birthday\":\"0001-01-01\",\"username\":\"\",\"last_login\":\"0001-01-01 00:00:00 +0000 UTC\",\"created_at\":\"0001-01-01 00:00:00 +0000 UTC\",\"updated_at\":\"0001-01-01 00:00:00 +0000 UTC\"},{\"id\":\"3\",\"first_name\":\"baz\",\"last_name\":\"\",\"email\":\"\",\"birthday\":\"0001-01-01\",\"username\":\"\",\"last_login\":\"0001-01-01 00:00:00 +0000 UTC\",\"created_at\":\"0001-01-01 00:00:00 +0000 UTC\",\"updated_at\":\"0001-01-01 00:00:00 +0000 UTC\"}]\n",
 			},
-			err:     errHTTP{},
-			wantErr: false,
+			err: errHTTP{},
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mock := &mocks.UserSvc{}
-			mock.On("GetAll").Return(tt.svc.resp.users, tt.svc.resp.err)
-			ctrl := NewUserController(mock)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mockSvc := &mocks.UserSvc{}
+			mockSvc.On("GetAll").Return(test.svc.resp.users, test.svc.resp.err)
+			ctrl := NewUserController(mockSvc)
 
 			req := httptest.NewRequest(http.MethodGet, "/users", nil)
 			rec := httptest.NewRecorder()
 
 			ctrl.getAll(rec, req)
 
-			assert.Equal(t, rec.Code, tt.resp.code)
-			if tt.wantErr {
+			assert.Equal(t, rec.Code, test.httpResp.code)
+			if test.err != (errHTTP{}) {
 				var errMsg errHTTP
 				require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &errMsg))
-				assert.Equal(t, tt.err, errMsg)
+				assert.Equal(t, test.err, errMsg)
 				return
 			}
-			assert.Equal(t, tt.resp.body, rec.Body.String())
+			assert.Equal(t, test.httpResp.body, rec.Body.String())
 		})
 	}
 }
@@ -363,12 +350,11 @@ func TestUserController_getFiltered(t *testing.T) {
 		resp svcResp
 	}
 	tests := []struct {
-		name    string
-		svc     svc
-		req     httpRequestTest
-		resp    httpResponseTest
-		err     errHTTP
-		wantErr bool
+		name     string
+		svc      svc
+		httpReq  httpRequestTest
+		httpResp httpResponseTest
+		err      errHTTP
 	}{
 		{
 			name: "Filter empty",
@@ -379,13 +365,13 @@ func TestUserController_getFiltered(t *testing.T) {
 					err:   nil,
 				},
 			},
-			req: httpRequestTest{
+			httpReq: httpRequestTest{
 				params: map[string]string{
 					"filter": "",
 					"value":  "foo-value",
 				},
 			},
-			resp: httpResponseTest{
+			httpResp: httpResponseTest{
 				code: http.StatusBadRequest,
 			},
 			err: errHTTP{
@@ -393,7 +379,6 @@ func TestUserController_getFiltered(t *testing.T) {
 				Status:  ctrlParamErrStatus,
 				Message: "invalid filter parameter: filter empty",
 			},
-			wantErr: true,
 		},
 		{
 			name: "Filter value empty",
@@ -404,13 +389,13 @@ func TestUserController_getFiltered(t *testing.T) {
 					err:   nil,
 				},
 			},
-			req: httpRequestTest{
+			httpReq: httpRequestTest{
 				params: map[string]string{
 					"filter": "foo-filter",
 					"value":  "",
 				},
 			},
-			resp: httpResponseTest{
+			httpResp: httpResponseTest{
 				code: http.StatusBadRequest,
 			},
 			err: errHTTP{
@@ -418,7 +403,6 @@ func TestUserController_getFiltered(t *testing.T) {
 				Status:  ctrlParamErrStatus,
 				Message: "invalid value parameter: filter value empty",
 			},
-			wantErr: true,
 		},
 		{
 			name: "Service error",
@@ -429,13 +413,13 @@ func TestUserController_getFiltered(t *testing.T) {
 					err:   &service.Err{Err: errors.New("some svc error")},
 				},
 			},
-			req: httpRequestTest{
+			httpReq: httpRequestTest{
 				params: map[string]string{
 					"filter": "foo-filter",
 					"value":  "foo-value",
 				},
 			},
-			resp: httpResponseTest{
+			httpResp: httpResponseTest{
 				code: http.StatusBadRequest,
 			},
 			err: errHTTP{
@@ -443,7 +427,6 @@ func TestUserController_getFiltered(t *testing.T) {
 				Status:  svcErrStatus,
 				Message: "service: some svc error",
 			},
-			wantErr: true,
 		},
 		{
 			name: "No records",
@@ -454,18 +437,17 @@ func TestUserController_getFiltered(t *testing.T) {
 					err:   nil,
 				},
 			},
-			req: httpRequestTest{
+			httpReq: httpRequestTest{
 				params: map[string]string{
 					"filter": "foo-filter",
 					"value":  "foo-value",
 				},
 			},
-			resp: httpResponseTest{
+			httpResp: httpResponseTest{
 				code: http.StatusOK,
 				body: "[]\n",
 			},
-			err:     errHTTP{},
-			wantErr: false,
+			err: errHTTP{},
 		},
 		{
 			name: "Multiple records",
@@ -480,40 +462,39 @@ func TestUserController_getFiltered(t *testing.T) {
 					err: nil,
 				},
 			},
-			req: httpRequestTest{
+			httpReq: httpRequestTest{
 				params: map[string]string{
 					"filter": "foo-filter",
 					"value":  "foo-value",
 				},
 			},
-			resp: httpResponseTest{
+			httpResp: httpResponseTest{
 				code: http.StatusOK,
 				body: "[{\"id\":\"0\",\"first_name\":\"foo\",\"last_name\":\"\",\"email\":\"\",\"birthday\":\"0001-01-01\",\"username\":\"\",\"last_login\":\"0001-01-01 00:00:00 +0000 UTC\",\"created_at\":\"0001-01-01 00:00:00 +0000 UTC\",\"updated_at\":\"0001-01-01 00:00:00 +0000 UTC\"},{\"id\":\"0\",\"first_name\":\"bar\",\"last_name\":\"\",\"email\":\"\",\"birthday\":\"0001-01-01\",\"username\":\"\",\"last_login\":\"0001-01-01 00:00:00 +0000 UTC\",\"created_at\":\"0001-01-01 00:00:00 +0000 UTC\",\"updated_at\":\"0001-01-01 00:00:00 +0000 UTC\"},{\"id\":\"0\",\"first_name\":\"baz\",\"last_name\":\"\",\"email\":\"\",\"birthday\":\"0001-01-01\",\"username\":\"\",\"last_login\":\"0001-01-01 00:00:00 +0000 UTC\",\"created_at\":\"0001-01-01 00:00:00 +0000 UTC\",\"updated_at\":\"0001-01-01 00:00:00 +0000 UTC\"}]\n",
 			},
-			err:     errHTTP{},
-			wantErr: false,
+			err: errHTTP{},
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mock := &mocks.UserSvc{}
-			mock.On("Find", tt.svc.args.filter, tt.svc.args.value).Return(tt.svc.resp.users, tt.svc.resp.err)
-			ctrl := NewUserController(mock)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mockSvc := &mocks.UserSvc{}
+			mockSvc.On("Find", test.svc.args.filter, test.svc.args.value).Return(test.svc.resp.users, test.svc.resp.err)
+			ctrl := NewUserController(mockSvc)
 
-			req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/users?filter=%v&value=%v", tt.req.params["filter"], tt.req.params["value"]), nil)
+			req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/users?filter=%v&value=%v", test.httpReq.params["filter"], test.httpReq.params["value"]), nil)
 			rec := httptest.NewRecorder()
 
 			ctrl.getFiltered(rec, req)
 
-			assert.Equal(t, rec.Code, tt.resp.code)
-			if tt.wantErr {
+			assert.Equal(t, rec.Code, test.httpResp.code)
+			if test.err != (errHTTP{}) {
 				var errMsg errHTTP
 				require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &errMsg))
-				assert.Equal(t, tt.err, errMsg)
+				assert.Equal(t, test.err, errMsg)
 				return
 			}
-			assert.Equal(t, tt.resp.body, rec.Body.String())
+			assert.Equal(t, test.httpResp.body, rec.Body.String())
 		})
 	}
 }
@@ -653,12 +634,11 @@ func TestUserControlller_delete(t *testing.T) {
 		resp svcResp
 	}
 	tests := []struct {
-		name    string
-		svc     svc
-		req     httpRequestTest
-		resp    httpResponseTest
-		err     errHTTP
-		wantErr bool
+		name     string
+		svc      svc
+		httpReq  httpRequestTest
+		httpResp httpResponseTest
+		err      errHTTP
 	}{
 		{
 			name: "Empty",
@@ -670,12 +650,12 @@ func TestUserControlller_delete(t *testing.T) {
 					err: nil,
 				},
 			},
-			req: httpRequestTest{
+			httpReq: httpRequestTest{
 				params: map[string]string{
 					"id": "",
 				},
 			},
-			resp: httpResponseTest{
+			httpResp: httpResponseTest{
 				code: http.StatusBadRequest,
 			},
 			err: errHTTP{
@@ -683,7 +663,6 @@ func TestUserControlller_delete(t *testing.T) {
 				Status:  ctrlParamErrStatus,
 				Message: "invalid id parameter: empty value",
 			},
-			wantErr: true,
 		},
 		{
 			name: "Bad ID",
@@ -695,12 +674,12 @@ func TestUserControlller_delete(t *testing.T) {
 					err: nil,
 				},
 			},
-			req: httpRequestTest{
+			httpReq: httpRequestTest{
 				params: map[string]string{
 					"id": "badid",
 				},
 			},
-			resp: httpResponseTest{
+			httpResp: httpResponseTest{
 				code: http.StatusBadRequest,
 			},
 			err: errHTTP{
@@ -708,7 +687,6 @@ func TestUserControlller_delete(t *testing.T) {
 				Status:  ctrlParamErrStatus,
 				Message: "invalid id parameter: strconv.ParseUint: parsing \"badid\": invalid syntax",
 			},
-			wantErr: true,
 		},
 		{
 			name: "Deleted",
@@ -720,38 +698,38 @@ func TestUserControlller_delete(t *testing.T) {
 					err: nil,
 				},
 			},
-			req: httpRequestTest{
+			httpReq: httpRequestTest{
 				params: map[string]string{
 					"id": "123",
 				},
 			},
-			resp: httpResponseTest{
+			httpResp: httpResponseTest{
 				code: http.StatusOK,
 				body: "{\"message\":\"user 123 deleted successfully\"}\n",
 			},
-			wantErr: false,
+			err: errHTTP{},
 		},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mock := &mocks.UserSvc{}
-			mock.On("Delete", tt.svc.args.id).Return(tt.svc.resp.err)
-			ctrl := NewUserController(mock)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mockSvc := &mocks.UserSvc{}
+			mockSvc.On("Delete", test.svc.args.id).Return(test.svc.resp.err)
+			ctrl := NewUserController(mockSvc)
 
-			req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/users?id=%v", tt.req.params["id"]), nil)
+			req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/users?id=%v", test.httpReq.params["id"]), nil)
 			rec := httptest.NewRecorder()
 
 			ctrl.delete(rec, req)
 
-			assert.Equal(t, rec.Code, tt.resp.code)
-			if tt.wantErr {
+			assert.Equal(t, rec.Code, test.httpResp.code)
+			if test.err != (errHTTP{}) {
 				var errMsg errHTTP
 				require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &errMsg))
-				assert.Equal(t, tt.err, errMsg)
+				assert.Equal(t, test.err, errMsg)
 				return
 			}
-			assert.Equal(t, tt.resp.body, rec.Body.String())
+			assert.Equal(t, test.httpResp.body, rec.Body.String())
 		})
 	}
 }
@@ -770,20 +748,19 @@ func TestUserControlller_login(t *testing.T) {
 		resp svcResp
 	}
 	tests := []struct {
-		name    string
-		svc     svc
-		req     httpRequestTest
-		resp    httpResponseTest
-		err     errHTTP
-		wantErr bool
+		name     string
+		svc      svc
+		httpReq  httpRequestTest
+		httpResp httpResponseTest
+		err      errHTTP
 	}{
 		{
 			name: "Payload Empty",
 			svc:  svc{},
-			req: httpRequestTest{
+			httpReq: httpRequestTest{
 				payload: []byte(""),
 			},
-			resp: httpResponseTest{
+			httpResp: httpResponseTest{
 				code: http.StatusUnsupportedMediaType,
 			},
 			err: errHTTP{
@@ -791,14 +768,13 @@ func TestUserControlller_login(t *testing.T) {
 				Status:  ctrlPayloadErrStatus,
 				Message: "invalid payload: EOF",
 			},
-			wantErr: true,
 		},
 		{
 			name: "Bad JSON",
-			req: httpRequestTest{
+			httpReq: httpRequestTest{
 				payload: []byte(`{"username": "foo","password": "some-password"`),
 			},
-			resp: httpResponseTest{
+			httpResp: httpResponseTest{
 				code: http.StatusUnsupportedMediaType,
 			},
 			err: errHTTP{
@@ -806,7 +782,6 @@ func TestUserControlller_login(t *testing.T) {
 				Status:  ctrlPayloadErrStatus,
 				Message: "invalid payload: unexpected EOF",
 			},
-			wantErr: true,
 		},
 		{
 			name: "Repository Error",
@@ -820,10 +795,10 @@ func TestUserControlller_login(t *testing.T) {
 					err:  &repository.Err{Err: errors.New("some repository error")},
 				},
 			},
-			req: httpRequestTest{
+			httpReq: httpRequestTest{
 				payload: []byte(`{"username": "foo","password": "some-password"}`),
 			},
-			resp: httpResponseTest{
+			httpResp: httpResponseTest{
 				code: http.StatusInternalServerError,
 			},
 			err: errHTTP{
@@ -831,7 +806,6 @@ func TestUserControlller_login(t *testing.T) {
 				Status:  repoErrStatus,
 				Message: "repository: some repository error",
 			},
-			wantErr: true,
 		},
 		{
 			name: "Service Error",
@@ -845,10 +819,10 @@ func TestUserControlller_login(t *testing.T) {
 					err:  &service.Err{Err: errors.New("some service error")},
 				},
 			},
-			req: httpRequestTest{
+			httpReq: httpRequestTest{
 				payload: []byte(`{"username": "foo","password": "some-password"}`),
 			},
-			resp: httpResponseTest{
+			httpResp: httpResponseTest{
 				code: http.StatusBadRequest,
 			},
 			err: errHTTP{
@@ -856,7 +830,6 @@ func TestUserControlller_login(t *testing.T) {
 				Status:  svcErrStatus,
 				Message: "service: some service error",
 			},
-			wantErr: true,
 		},
 		{
 			name: "Valid",
@@ -877,35 +850,35 @@ func TestUserControlller_login(t *testing.T) {
 					err: nil,
 				},
 			},
-			req: httpRequestTest{
+			httpReq: httpRequestTest{
 				payload: []byte(`{"username": "foouser","password": "foopasswd"}`),
 			},
-			resp: httpResponseTest{
+			httpResp: httpResponseTest{
 				code: http.StatusOK,
 				body: "{\"id\":\"0\",\"first_name\":\"foo\",\"last_name\":\"baz\",\"email\":\"foo@example.com\",\"username\":\"foouser\",\"last_login\":\"0001-01-01 00:00:00 +0000 UTC\"}\n",
 			},
-			wantErr: false,
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			mock := &mocks.UserSvc{}
-			mock.On("ValidateLogin", tt.svc.args.username, tt.svc.args.passwd).Return(tt.svc.resp.user, tt.svc.resp.err)
-			ctrl := NewUserController(mock)
 
-			req := httptest.NewRequest(http.MethodPost, "/login", bytes.NewBuffer(tt.req.payload))
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			mockSvc := &mocks.UserSvc{}
+			mockSvc.On("ValidateLogin", test.svc.args.username, test.svc.args.passwd).Return(test.svc.resp.user, test.svc.resp.err)
+			ctrl := NewUserController(mockSvc)
+
+			req := httptest.NewRequest(http.MethodPost, "/login", bytes.NewBuffer(test.httpReq.payload))
 			rec := httptest.NewRecorder()
 
 			ctrl.login(rec, req)
 
-			assert.Equal(t, rec.Code, tt.resp.code)
-			if tt.wantErr {
+			assert.Equal(t, rec.Code, test.httpResp.code)
+			if test.err != (errHTTP{}) {
 				var errMsg errHTTP
 				require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &errMsg))
-				assert.Equal(t, tt.err, errMsg)
+				assert.Equal(t, test.err, errMsg)
 				return
 			}
-			assert.Equal(t, tt.resp.body, rec.Body.String())
+			assert.Equal(t, test.httpResp.body, rec.Body.String())
 		})
 	}
 }

@@ -52,7 +52,7 @@ func (e ParameterErr) Error() string {
 	return fmt.Sprintf("invalid %v parameter: %v", e.Param, e.Err)
 }
 
-// newErrHTTP returns a new HTTP error message based on error types.
+// newErrHTTP returns a new HTTP error message based on error types
 func newErrHTTP(err error) errHTTP {
 	var (
 		repoErr        *repository.Err
@@ -116,7 +116,7 @@ func newErrHTTP(err error) errHTTP {
 	}
 }
 
-// errJSON returns an error JSON response.
+// errJSON returns an error JSON response
 func errJSON(w http.ResponseWriter, r *http.Request, err error) {
 	errHttp := newErrHTTP(err)
 	render.Status(r, errHttp.Code)
