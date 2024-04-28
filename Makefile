@@ -78,3 +78,8 @@ pgadmin-clean: pgadmin-rm
 mocks:
 	mockery --name=UserRepo --srcpkg=./internal/service --output=./internal/service/mocks
 	mockery --name=UserSvc --srcpkg=./internal/controller --output=./internal/controller/mocks
+
+# generate swagger documentation
+swagger:
+	go install github.com/swaggo/swag/cmd/swag@latest
+	swag init -g cmd/http-rest-api/main.go -o ./api

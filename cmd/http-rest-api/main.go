@@ -8,6 +8,13 @@ import (
 	"github.com/wizeline/CA-Microservices-Go/pkg/app"
 )
 
+//	@title			CAM-Go REST API
+//	@description	Code Accelerator Microservices REST API based on Golang.
+//	@termsOfService	http://swagger.io/terms/
+//	@contact.name	CAM-Go
+//	@contact.email	camgo@wizeline.com
+//
+// @securityDefinitions.basic	BasicAuth
 func main() {
 	l := logger.NewZeroLog()
 	cfg := config.NewConfig()

@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/wizeline/CA-Microservices-Go/api"
 	"github.com/wizeline/CA-Microservices-Go/internal/config"
 	"github.com/wizeline/CA-Microservices-Go/internal/controller"
 	"github.com/wizeline/CA-Microservices-Go/internal/db"
@@ -23,6 +24,11 @@ type ApiHTTP struct {
 	dbConn *db.PgConn
 	server *http.Server
 	logger logger.ZeroLog
+}
+
+func provideSwaggerHTTP(cfg config.Application, l logger.ZeroLog) controller.SwaggerHTTP {
+	api.SetSwaggerInfo(cfg, l)
+	return controller.NewSwaggerHTTP()
 }
 
 func NewApiHTTP(cfg config.Config, l logger.ZeroLog) (ApiHTTP, error) {
@@ -45,13 +51,13 @@ func NewApiHTTP(cfg config.Config, l logger.ZeroLog) (ApiHTTP, error) {
 	// User dependencies
 	userRepo := repository.NewUserRepositoryPg(dbConn.DB())
 	userSvc := service.NewUserService(userRepo)
-	userCtrl := controller.NewUserController(userSvc)
 
 	// Router
 	r := router.NewChi(cfg.Application, l)
 	r.Add(
-		controller.NewHealthCheck(),
-		userCtrl,
+		provideSwaggerHTTP(cfg.Application, l),
+		controller.NewHealthCheckHTTP(),
+		controller.NewUserHTTP(userSvc),
 	)
 	r.RegisterRoutes()
 
