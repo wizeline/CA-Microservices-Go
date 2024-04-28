@@ -1,0 +1,340 @@
+definitions:
+  controller.basicMessage:
+    properties:
+      message:
+        type: string
+    type: object
+  controller.errHTTP:
+    properties:
+      code:
+        type: integer
+      message:
+        type: string
+      status:
+        $ref: '#/definitions/controller.errStatus'
+    type: object
+  controller.errStatus:
+    enum:
+    - RepositoryError
+    - ServiceError
+    - ControllerPayloadError
+    - ControllerParameterError
+    type: string
+    x-enum-varnames:
+    - repoErrStatus
+    - svcErrStatus
+    - ctrlPayloadErrStatus
+    - ctrlParamErrStatus
+  controller.userCreateRequest:
+    properties:
+      birthday:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      last_name:
+        type: string
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  controller.userLoginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  controller.userLoginResponse:
+    properties:
+      email:
+        type: string
+      first_name:
+        type: string
+      id:
+        type: string
+      last_login:
+        type: string
+      last_name:
+        type: string
+      username:
+        type: string
+    type: object
+  controller.userResponse:
+    properties:
+      birthday:
+        type: string
+      email:
+        type: string
+      first_name:
+        type: string
+      id:
+        type: string
+      last_name:
+        type: string
+      username:
+        type: string
+    type: object
+  controller.userUpdateRequest:
+    properties:
+      birthday:
+        type: string
+      first_name:
+        type: string
+      id:
+        type: string
+      last_name:
+        type: string
+      username:
+        type: string
+    type: object
+info:
+  contact:
+    email: camgo@wizeline.com
+    name: CAM-Go
+  description: Code Accelerator Microservices REST API based on Golang.
+  termsOfService: http://swagger.io/terms/
+  title: CAM-Go REST API
+paths:
+  /healthz:
+    get:
+      consumes:
+      - application/json
+      description: Check if node is alive
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.basicMessage'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/controller.errHTTP'
+      summary: Check if node is alive
+      tags:
+      - admin
+  /login:
+    post:
+      description: authenticates a user
+      parameters:
+      - description: Login Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/controller.userLoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.userLoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/controller.errHTTP'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/controller.errHTTP'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controller.errHTTP'
+      summary: authenticates a user
+      tags:
+      - user
+  /user:
+    get:
+      description: retrieves a user by id
+      parameters:
+      - description: User ID
+        in: query
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.userResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/controller.errHTTP'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/controller.errHTTP'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controller.errHTTP'
+      summary: retrieves a user by id
+      tags:
+      - user
+  /users:
+    delete:
+      description: retrieves a list of filtered users.
+      parameters:
+      - description: User ID
+        in: query
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.basicMessage'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/controller.errHTTP'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/controller.errHTTP'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controller.errHTTP'
+      summary: deletes a user by ID
+      tags:
+      - user
+    get:
+      description: retrieves all users
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/controller.userResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/controller.errHTTP'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/controller.errHTTP'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controller.errHTTP'
+      summary: retrieves all users
+      tags:
+      - user
+    post:
+      description: Creates a new user
+      parameters:
+      - description: New User
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/controller.userCreateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.basicMessage'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/controller.errHTTP'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/controller.errHTTP'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controller.errHTTP'
+      summary: creates a new user
+      tags:
+      - user
+    put:
+      description: Update a user
+      parameters:
+      - description: User Update Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/controller.userUpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.basicMessage'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/controller.errHTTP'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/controller.errHTTP'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controller.errHTTP'
+      summary: update a user
+      tags:
+      - user
+  /users/filter:
+    get:
+      description: retrieves a list of filtered users.
+      parameters:
+      - description: Filter Name
+        in: query
+        name: filter
+        required: true
+        type: string
+      - description: Filter Value
+        in: query
+        name: value
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/controller.userResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/controller.errHTTP'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/controller.errHTTP'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/controller.errHTTP'
+      summary: retrieves a list of filtered users
+      tags:
+      - user
+securityDefinitions:
+  BasicAuth:
+    type: basic
+swagger: "2.0"

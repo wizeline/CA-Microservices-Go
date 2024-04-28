@@ -88,7 +88,7 @@ func TestUserControlller_create(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			mockSvc := &mocks.UserSvc{}
 			mockSvc.On("Create", test.svc.args).Return(test.svc.err)
-			ctrl := NewUserController(mockSvc)
+			ctrl := NewUserHTTP(mockSvc)
 
 			req := httptest.NewRequest(http.MethodPost, "/users", bytes.NewBuffer(test.httpReq.payload))
 			rec := httptest.NewRecorder()
@@ -184,7 +184,7 @@ func TestUserController_get(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mockSvc := &mocks.UserSvc{}
 			mockSvc.On("Get", tt.svc.id).Return(tt.svc.resp.user, tt.svc.resp.err)
-			ctrl := NewUserController(mockSvc)
+			ctrl := NewUserHTTP(mockSvc)
 
 			req := httptest.NewRequest(http.MethodGet, "/users?id="+tt.httpReq.params["id"], nil)
 			rec := httptest.NewRecorder()
@@ -278,7 +278,7 @@ func TestUserController_getAll(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			mockSvc := &mocks.UserSvc{}
 			mockSvc.On("GetAll").Return(test.svcResp.users, test.svcResp.err)
-			ctrl := NewUserController(mockSvc)
+			ctrl := NewUserHTTP(mockSvc)
 
 			req := httptest.NewRequest(http.MethodGet, "/users", nil)
 			rec := httptest.NewRecorder()
@@ -441,7 +441,7 @@ func TestUserController_getFiltered(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			mockSvc := &mocks.UserSvc{}
 			mockSvc.On("Find", test.svc.args.filter, test.svc.args.value).Return(test.svc.resp.users, test.svc.resp.err)
-			ctrl := NewUserController(mockSvc)
+			ctrl := NewUserHTTP(mockSvc)
 
 			req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/users?filter=%v&value=%v", test.httpReq.params["filter"], test.httpReq.params["value"]), nil)
 			rec := httptest.NewRecorder()
@@ -539,7 +539,7 @@ func TestUserControlller_update(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			mockSvc := &mocks.UserSvc{}
 			mockSvc.On("Update", test.svc.args).Return(test.svc.err)
-			ctrl := NewUserController(mockSvc)
+			ctrl := NewUserHTTP(mockSvc)
 
 			req := httptest.NewRequest(http.MethodPost, "/users", bytes.NewBuffer(test.httpReq.payload))
 			rec := httptest.NewRecorder()
@@ -625,7 +625,7 @@ func TestUserControlller_delete(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			mockSvc := &mocks.UserSvc{}
 			mockSvc.On("Delete", test.svc.id).Return(test.svc.err)
-			ctrl := NewUserController(mockSvc)
+			ctrl := NewUserHTTP(mockSvc)
 
 			req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/users?id=%v", test.httpReq.params["id"]), nil)
 			rec := httptest.NewRecorder()
@@ -773,7 +773,7 @@ func TestUserControlller_login(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			mockSvc := &mocks.UserSvc{}
 			mockSvc.On("ValidateLogin", test.svc.args.username, test.svc.args.passwd).Return(test.svc.resp.user, test.svc.resp.err)
-			ctrl := NewUserController(mockSvc)
+			ctrl := NewUserHTTP(mockSvc)
 
 			req := httptest.NewRequest(http.MethodPost, "/login", bytes.NewBuffer(test.httpReq.payload))
 			rec := httptest.NewRecorder()

@@ -10,7 +10,7 @@ import (
 )
 
 func TestHealthCheck_heartbeat(t *testing.T) {
-	ctrl := NewHealthCheck()
+	ctrl := NewHealthCheckHTTP()
 
 	req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
 	rec := httptest.NewRecorder()

@@ -14,8 +14,8 @@ import (
 	"github.com/go-chi/render"
 )
 
-// We guarantee that the requirements of the HTTP controller are met
-var _ HTTP = &UserController{}
+// We ensure the HTTP interface signature is satisfied by the UserHTTP implementation
+var _ HTTP = &UserHTTP{}
 
 // userCreateRequest represents the data transfer object requested for creating a user
 type userCreateRequest struct {
@@ -62,7 +62,7 @@ type userLoginResponse struct {
 	LastLogin string `json:"last_login"`
 }
 
-// UserService is an abstraction of the UserService dependecy used by the UserController
+// UserService is an abstraction of the UserService dependecy used by the UserHTTP
 type UserService interface {
 	Create(args service.UserCreateArgs) error
 	Get(id uint64) (service.UserResponse, error)
@@ -78,20 +78,20 @@ type UserService interface {
 	ValidateLogin(username string, passwd string) (service.UserLoginResponse, error)
 }
 
-// UserController is the user controller representation.
-type UserController struct {
+// UserHTTP is the user controller representation.
+type UserHTTP struct {
 	svc UserService
 }
 
-// NewUserController returns a new UserController implementation.
-func NewUserController(svc UserService) UserController {
-	return UserController{
+// NewUserHTTP returns a new UserHTTP implementation.
+func NewUserHTTP(svc UserService) UserHTTP {
+	return UserHTTP{
 		svc: svc,
 	}
 }
 
-// SetRoutes sets a fresh middleware stack to configure the handle functions of UserController and mounts them to the given subrouter.
-func (uc UserController) SetRoutes(r chi.Router) {
+// SetRoutes sets a fresh middleware stack to configure the handle functions of the UserHTTP and mounts them to the given subrouter.
+func (uc UserHTTP) SetRoutes(r chi.Router) {
 	r.Post("/users", uc.create)
 	r.Get("/user", uc.get)
 	r.Get("/users", uc.getAll)
@@ -102,7 +102,18 @@ func (uc UserController) SetRoutes(r chi.Router) {
 	r.Post("/login", uc.login)
 }
 
-func (uc UserController) create(w http.ResponseWriter, r *http.Request) {
+// create godoc
+// @Summary creates a new user
+// @Description  Creates a new user
+// @Tags         user
+// @Produce      json
+// @Param 		request body userCreateRequest true "New User"
+// @Success      200  {object}  basicMessage
+// @Failure      400  {object}  errHTTP
+// @Failure      404  {object}  errHTTP
+// @Failure      500  {object}  errHTTP
+// @Router       /users [post]
+func (uc UserHTTP) create(w http.ResponseWriter, r *http.Request) {
 	var dto userCreateRequest
 	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
 		errJSON(w, r, &PayloadErr{err})
@@ -132,7 +143,18 @@ func (uc UserController) create(w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, r, basicMessage{Message: "user created successfully"})
 }
 
-func (uc UserController) get(w http.ResponseWriter, r *http.Request) {
+// get godoc
+// @Summary retrieves a user by id
+// @Description  retrieves a user by id
+// @Tags         user
+// @Produce      json
+// @Param        id   query     int  true  "User ID"
+// @Success      200  {object}  userResponse
+// @Failure      400  {object}  errHTTP
+// @Failure      404  {object}  errHTTP
+// @Failure      500  {object}  errHTTP
+// @Router       /user [get]
+func (uc UserHTTP) get(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 	if id == "" {
 		errJSON(w, r, &ParameterErr{Param: "id", Err: "empty value"})
@@ -151,7 +173,17 @@ func (uc UserController) get(w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, r, parseUserResponse(user))
 }
 
-func (uc UserController) getAll(w http.ResponseWriter, r *http.Request) {
+// getAll godoc
+// @Summary retrieves all users
+// @Description  retrieves all users
+// @Tags         user
+// @Produce      json
+// @Success      200  {object}  []userResponse
+// @Failure      400  {object}  errHTTP
+// @Failure      404  {object}  errHTTP
+// @Failure      500  {object}  errHTTP
+// @Router       /users [get]
+func (uc UserHTTP) getAll(w http.ResponseWriter, r *http.Request) {
 	users, err := uc.svc.GetAll()
 	if err != nil {
 		errJSON(w, r, err)
@@ -166,7 +198,19 @@ func (uc UserController) getAll(w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, r, usersResp)
 }
 
-func (uc UserController) getFiltered(w http.ResponseWriter, r *http.Request) {
+// getFiltered godoc
+// @Summary retrieves a list of filtered users
+// @Description  retrieves a list of filtered users.
+// @Tags         user
+// @Produce      json
+// @Param        filter   query     string  true  "Filter Name"
+// @Param        value    query     string  false  "Filter Value"
+// @Success      200  {object}  userResponse
+// @Failure      400  {object}  errHTTP
+// @Failure      404  {object}  errHTTP
+// @Failure      500  {object}  errHTTP
+// @Router       /users/filter [get]
+func (uc UserHTTP) getFiltered(w http.ResponseWriter, r *http.Request) {
 	filter := r.URL.Query().Get("filter")
 	if filter == "" {
 		errJSON(w, r, &ParameterErr{Param: "filter", Err: "filter empty"})
@@ -198,7 +242,18 @@ func (uc UserController) getFiltered(w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, r, usersResp)
 }
 
-func (uc UserController) update(w http.ResponseWriter, r *http.Request) {
+// update godoc
+// @Summary update a user
+// @Description  Update a user
+// @Tags         user
+// @Produce      json
+// @Param        request   body     userUpdateRequest  true  "User Update Request"
+// @Success      200  {object}  basicMessage
+// @Failure      400  {object}  errHTTP
+// @Failure      404  {object}  errHTTP
+// @Failure      500  {object}  errHTTP
+// @Router       /users [put]
+func (uc UserHTTP) update(w http.ResponseWriter, r *http.Request) {
 	var dto userUpdateRequest
 	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
 		errJSON(w, r, &PayloadErr{err})
@@ -227,7 +282,18 @@ func (uc UserController) update(w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, r, basicMessage{Message: fmt.Sprintf("user %d updated successfully", userArgs.ID)})
 }
 
-func (uc UserController) delete(w http.ResponseWriter, r *http.Request) {
+// delete godoc
+// @Summary deletes a user by ID
+// @Description  retrieves a list of filtered users.
+// @Tags         user
+// @Produce      json
+// @Param        id   query     int  true  "User ID"
+// @Success      200  {object}  basicMessage
+// @Failure      400  {object}  errHTTP
+// @Failure      404  {object}  errHTTP
+// @Failure      500  {object}  errHTTP
+// @Router       /users [delete]
+func (uc UserHTTP) delete(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 	if id == "" {
 		errJSON(w, r, &ParameterErr{Param: "id", Err: "empty value"})
@@ -245,7 +311,18 @@ func (uc UserController) delete(w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, r, basicMessage{Message: fmt.Sprintf("user %d deleted successfully", idUint)})
 }
 
-func (uc UserController) login(w http.ResponseWriter, r *http.Request) {
+// login godoc
+// @Summary authenticates a user
+// @Description  authenticates a user
+// @Tags         user
+// @Produce      json
+// @Param        request 	body 		userLoginRequest  true  "Login Request"
+// @Success      200 		{object} 	userLoginResponse
+// @Failure      400		{object} 	errHTTP
+// @Failure      404		{object} 	errHTTP
+// @Failure      500		{object} 	errHTTP
+// @Router       /login [post]
+func (uc UserHTTP) login(w http.ResponseWriter, r *http.Request) {
 	var dto userLoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&dto); err != nil {
 		errJSON(w, r, &PayloadErr{err})
