@@ -28,15 +28,15 @@ services:
 
   pgdb:
     # TODO: implement persistance data(volumen) for PG_DATA
-    container_name: ${PGDB_CONTAINER}
-    image: postgres:alpine${ALPINE_VERSION}
+    container_name: ${PGDB_CONTAINER_NAME}
+    image: ${PGDB_IMAGE}
     restart: on-failure
     environment:
       POSTGRES_DB: ${DATABASE_POSTGRES_DBNAME}
       POSTGRES_USER: ${DATABASE_POSTGRES_USER}
       POSTGRES_PASSWORD: ${DATABASE_POSTGRES_PASSWD}
     ports:
-      - ${DATABASE_POSTGRES_PORT}:5432
+      - 5432:5432
     networks:
       # TODO: dynamically set network name with the prefix APP_NAME 
       camgo-net: {}
