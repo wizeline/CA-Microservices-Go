@@ -10,6 +10,7 @@ on:
     branches: [ main ]
   workflow_call:
 
+# TODO: move CAM_GO_VERSION to github actions variables
 env:
     CAM_GO_VERSION: 1.22.0
 
@@ -30,6 +31,41 @@ jobs:
           version: latest
           args: --timeout 5m
   
+  unit-test:
+    needs: [ lint ]
+    name: unit testing for go app
+    runs-on: ubuntu-latest  
+    services:
+      postgres:
+        image: postgres:16 #TODO: migrate postgresql docker image version to github action variables
+        ports:
+          - 5432:5432
+        env:
+          # TODO: retrieve database name and credentials from github actions variables
+          POSTGRES_DB: camgo
+          POSTGRES_USER: camgouser
+          POSTGRES_PASSWORD: campgop4s5W0rD
+        options: > 
+          --health-cmd="pg_isready -U camgouser -d camgo"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Setup GO
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.CAM_GO_VERSION }}
+      - name: Wait for PostgreSQL to start
+        # TODO: retrieve database name and credentials from github actions variables for the script below
+        run: |
+          until pg_isready -h localhost -p 5432 -U camgouser -d camgo; do
+            sleep 1
+          done
+      - name: Run GO tests
+        run: go test -v ./...
+
   build:
     needs: [ lint ]
     name: build go app
