@@ -45,11 +45,11 @@ jobs:
           POSTGRES_DB: camgo
           POSTGRES_USER: camgouser
           POSTGRES_PASSWORD: campgop4s5W0rD
-        options: > 
-          --health-cmd="pg_isready -U camgouser -d camgo"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
+        # options: > 
+        #   --health-cmd="pg_isready -U camgouser -d camgo"
+        #   --health-interval=10s
+        #   --health-timeout=5s
+        #   --health-retries=5
 
     steps:
       - name: Checkout repository
@@ -68,7 +68,7 @@ jobs:
         run: go test -v ./...
 
   build:
-    needs: [ lint ]
+    needs: [ unit-test ]
     name: build go app
     runs-on: ubuntu-latest
     steps:
