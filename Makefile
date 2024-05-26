@@ -2,28 +2,8 @@
 include ./deployments/.env
 export $(shell sed 's/=.*//' deployments/.env)
 
-help:
-	@echo "Available targets:"
-	@echo "  network	- Create network for application"
-	@echo "  app-img	- Create and pull the required docker images"
-	@echo "  build		- Build the application"
-	@echo "  app		- Run Go application container"
-	@echo "  stop		- Stop Go application"
-	@echo "  remove 	- Stop and remove Go application container"
-	@echo "  clean		- Stop, remove docker containers and generated images"
-	@echo "  start-db	- Start the PostgreSQL database"
-	@echo "  stop-db	- Stop the PostgreSQL database"
-	@echo "  remove-db	- Stop and remove the PostgreSQL database container"
-	@echo "  clean-db 	- Stop and remove the PostgreSQL database container and docker image"
-	@echo "  run-migrations - Run database migrations"
-	@echo "  rebuild-db	- Helper for rebuilding the database (stop, clean, start)"
-	@echo "  logs-db 	- Show database logs"
-	@echo "  pgadmin	- Start the PgAdmin container"
-	@echo "  pgadmin-stop	- Stop the PgAdmin container"
-	@echo "  pgadmin-rm	- Stop and remove the PgAdmin container"
-	@echo "  pgadmin-clean - Stop and remove the PgAdmin container and docker image"
-	@echo "  mocks  	- Generate mock objects"
-	@echo "  swagger 	- Generate swagger documentation"
+# Application ---------------------------------------------
+.PHONY: network	app-img	build app stop remove clean logs-db
 
 # Create Network for application
 network:
@@ -60,6 +40,9 @@ clean: stop remove
 	docker rmi -f ${APP_NAME}:${GO_VERSION}-${ALPINE_VERSION} || true
 	docker network rm ${NETWORK_NAME} || true
 	docker images -f dangling=true -q | xargs docker rmi
+
+# PostgreSQL Database ----------------------------------------
+.PHONY: start-db stop-db remove-db clean-db	run-migrations rebuild-db
 
 # Start the PostgreSQL database
 start-db:
@@ -103,7 +86,9 @@ logs-db:
 	@echo "Showing PostgreSQL database logs..."
 	docker logs -f ${PGDB_CONTAINER_NAME}
 
-# PgAdmin: default PostgreSQL GUI
+# PgAdmin: PostgreSQL GUI ------------------------------------
+.PHONY: pgadmin pgadmin-stop pgadmin-rm pgadmin-clean
+
 pgadmin:
 	docker pull dpage/pgadmin4:${PGADMIN_VERSION}
 # TODO: implement persistance data(volumen)
@@ -118,15 +103,39 @@ pgadmin-rm: pgadmin-stop
 pgadmin-clean: pgadmin-rm
 	docker rmi -f dpage/pgadmin4:${PGADMIN_VERSION} || true
 
-# Generate mock objects
+# Mocking ----------------------------------------------------
+.PHONY: mocks
 mocks:
 	mockery --name=UserRepo --srcpkg=./internal/service --output=./internal/service/mocks
 	mockery --name=UserSvc --srcpkg=./internal/controller --output=./internal/controller/mocks
 
-# generate swagger documentation
+# Swagger Documentation --------------------------------------
+.PHONY: swagger
 swagger:
 	go install github.com/swaggo/swag/cmd/swag@latest
 	swag init -g cmd/http-rest-api/main.go -o ./api
 
-# Default target
-.PHONY: network	app-img	build app stop remove clean start-db stop-db remove-db clean-db	run-migrations rebuild-db logs-db pgadmin pgadmin-stop pgadmin-rm pgadmin-clean	mocks swagger
+# Help -------------------------------------------------------
+.PHONY: help
+help:
+	@echo "Available targets:"
+	@echo "  network ........ Create network for application"
+	@echo "  app-img ........ Create and pull the required docker images"
+	@echo "  build .......... Build the application"
+	@echo "  app ............ Run Go application container"
+	@echo "  stop ........... Stop Go application"
+	@echo "  remove ......... Stop and remove Go application container"
+	@echo "  clean .......... Stop, remove docker containers and generated images"
+	@echo "  start-db ....... Start the PostgreSQL database"
+	@echo "  stop-db ........ Stop the PostgreSQL database"
+	@echo "  remove-db ...... Stop and remove the PostgreSQL database container"
+	@echo "  clean-db ....... Stop and remove the PostgreSQL database container and docker image"
+	@echo "  run-migrations . Run database migrations"
+	@echo "  rebuild-db ..... Helper for rebuilding the database (stop, clean, start)"
+	@echo "  logs-db ........ Show database logs"
+	@echo "  pgadmin ........ Start the PgAdmin container"
+	@echo "  pgadmin-stop ... Stop the PgAdmin container"
+	@echo "  pgadmin-rm ..... Stop and remove the PgAdmin container"
+	@echo "  pgadmin-clean .. Stop and remove the PgAdmin container and docker image"
+	@echo "  mocks .......... Generate mock objects"
+	@echo "  swagger ........ Generate swagger documentation"
