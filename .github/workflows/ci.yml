@@ -44,7 +44,7 @@ jobs:
           # TODO: retrieve database name and credentials from github actions variables
           POSTGRES_DB: camgo
           POSTGRES_USER: camgouser
-          POSTGRES_PASSWORD: campgop4s5W0rD
+          POSTGRES_PASSWORD: campgop44s5W0rD
 
     steps:
       - name: Checkout repository
