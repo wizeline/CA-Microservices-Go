@@ -16,14 +16,16 @@ func NewUserRepositoryPg(db *sql.DB) UserRepositoryPg {
 	}
 }
 
-func (r UserRepositoryPg) Create(user entity.User) error {
+func (r UserRepositoryPg) Create(args UserCreateArgs) error {
+	if err := args.Validate(); err != nil {
+		return err
+	}
 	_, err := r.db.Exec("INSERT INTO users (first_name, last_name, birthday, email, username, passwd) VALUES ($1, $2, $3, $4, $5, $6)",
-		user.FirstName, user.LastName, user.BirthDay, user.Email, user.Username, user.Passwd,
+		args.FirstName, args.LastName, args.Birthday, args.Email, args.Username, args.Passwd,
 	)
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
