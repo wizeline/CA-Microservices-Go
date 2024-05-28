@@ -1,25 +1,32 @@
 version: '3.9'
 services:
   app:
-    container_name: ${APP_CONTAINER}
-    image: ${APP_CONTAINER}:${GO_VERSION}-${ALPINE_VERSION}
+    container_name: ${APP_CONTAINER_NAME}
+    image: ${APP_IMAGE}
     build:
       context: ../.
       dockerfile: ./deployments/Dockerfile
       args:
-        APP_NAME: ${APP_NAME}
-        APP_BIN: ${APP_BIN}
         GO_VERSION: ${GO_VERSION}
         ALPINE_VERSION: ${ALPINE_VERSION}
-        WORKDIR: ${WORKDIR}
-        PORT: ${PORT}
+        APP_NAME: ${APP_NAME}
+        APP_PORT: ${APP_PORT}
+        APP_WORKDIR: ${APP_WORKDIR}
+        DB_MIGRATIONS_DIR: ${DATABASE_MIGRATIONS_DIR}
     restart: on-failure
-    env_file: 
-      - .env
     environment:
-      - PORT=${PORT}
+      APPLICATION_NAME: ${APP_NAME}
+      APPLICATION_VERSION: ${APP_VERSION}
+      HTTP_SERVER_HOST: ${APP_HOST}
+      HTTP_SERVER_PORT: ${APP_PORT}
+      DATABASE_DRIVER: ${DATABASE_DRIVER}
+      DATABASE_POSTGRES_HOST: ${PGDB_CONTAINER_NAME}
+      DATABASE_POSTGRES_PORT: ${PGDB_PORT}
+      DATABASE_POSTGRES_USER: ${PGDB_USER}
+      DATABASE_POSTGRES_PASSWD: ${PGDB_PASSWD}
+      DATABASE_POSTGRES_DBNAME: ${PGDB_DBNAME}
     ports:
-      - 8080:${PORT}
+      - 80:${APP_PORT}
     networks:
       # TODO: dynamically set network name with the prefix APP_NAME 
       camgo-net: {}
@@ -32,18 +39,18 @@ services:
     image: ${PGDB_IMAGE}
     restart: on-failure
     environment:
-      POSTGRES_DB: ${DATABASE_POSTGRES_DBNAME}
-      POSTGRES_USER: ${DATABASE_POSTGRES_USER}
-      POSTGRES_PASSWORD: ${DATABASE_POSTGRES_PASSWD}
+      POSTGRES_DB: ${PGDB_DBNAME}
+      POSTGRES_USER: ${PGDB_USER}
+      POSTGRES_PASSWORD: ${PGDB_PASSWD}
     ports:
-      - 5432:5432
+      - ${PGDB_PORT}:5432
     networks:
       # TODO: dynamically set network name with the prefix APP_NAME 
       camgo-net: {}
 
   pgadmin:
-    container_name: ${PGADMIN_CONTAINER}
-    image: dpage/pgadmin4:${PGADMIN_VERSION}
+    container_name: ${PGADMIN_CONTAINER_NAME}
+    image: ${PGADMIN_IMAGE}
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWD}
