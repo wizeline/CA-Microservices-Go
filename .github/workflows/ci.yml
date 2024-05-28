@@ -33,7 +33,7 @@ jobs:
   
   unit-test:
     needs: [ lint ]
-    name: unit testing for go app
+    name: unit testing
     runs-on: ubuntu-latest  
     services:
       postgres:
@@ -45,11 +45,6 @@ jobs:
           POSTGRES_DB: camgo
           POSTGRES_USER: camgouser
           POSTGRES_PASSWORD: campgop4s5W0rD
-        # options: > 
-        #   --health-cmd="pg_isready -U camgouser -d camgo"
-        #   --health-interval=10s
-        #   --health-timeout=5s
-        #   --health-retries=5
 
     steps:
       - name: Checkout repository
