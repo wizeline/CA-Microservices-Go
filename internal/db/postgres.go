@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"log"
 
-	_ "github.com/lib/pq"
 	"github.com/wizeline/CA-Microservices-Go/internal/config"
+
+	_ "github.com/lib/pq"
 )
 
 // PgConn handles the PostgreSQL database connection.
@@ -17,7 +18,7 @@ type PgConn struct {
 // NewPgConn creates a new database connector instance.
 func NewPgConn(cfg config.PostgreSQL) (*PgConn, error) {
 	connStr := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
-		cfg.Host(), cfg.Port(), cfg.User(), cfg.Passwd(), cfg.DBName())
+		cfg.Host, cfg.Port, cfg.User, cfg.Passwd, cfg.DBName)
 
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
@@ -25,8 +26,7 @@ func NewPgConn(cfg config.PostgreSQL) (*PgConn, error) {
 		return nil, err
 	}
 
-	err = db.Ping()
-	if err != nil {
+	if err = db.Ping(); err != nil {
 		log.Fatal(err)
 		return nil, err
 	}

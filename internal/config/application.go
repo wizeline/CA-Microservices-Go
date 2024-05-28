@@ -12,23 +12,13 @@ const apiPrefixFmt = "/api/v%d"
 
 // Application holds and retrieves the application's configuration properties.
 type Application struct {
-	name    string
-	version string
-}
-
-// Name returns the application's name
-func (a Application) Name() string {
-	return a.name
-}
-
-// Version returns the semantic version of the application. Ref: https://semver.org/
-func (a Application) Version() string {
-	return a.version
+	Name    string
+	Version string // the semantic version of the application. Ref: https://semver.org/
 }
 
 // MajorVersion returns the  major version's number of the application.
 func (a Application) MajorVersion() int {
-	strVer := strings.Trim(a.version, "v")
+	strVer := strings.Trim(a.Version, "v")
 	if len(strVer) == 0 {
 		return 0
 	}
