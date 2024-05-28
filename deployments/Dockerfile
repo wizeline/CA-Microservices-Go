@@ -1,39 +1,35 @@
-#################
 #  BUILD STAGE
-####
-ARG ALPINE_VERSION
 ARG GO_VERSION
+ARG ALPINE_VERSION
 FROM golang:${GO_VERSION}-alpine${ALPINE_VERSION} AS builder
 
 ARG APP_NAME
-ARG WORKDIR
+ARG APP_WORKDIR
 
-WORKDIR ${WORKDIR}
+WORKDIR ${APP_WORKDIR}
 
 ADD . .
 
 RUN set -eux \
-        && go mod download \
-        && go mod verify \
-        && go mod tidy -v
+   && go mod download \
+   && go mod verify \
+   && go mod tidy -v \
+   && go build -o ${APP_NAME} ./cmd/http-rest-api/...
 
-RUN go build -o ${APP_NAME} ./cmd/http-rest-api/...
 
-#################
 #  RUN STAGE
-####
 FROM alpine:${ALPINE_VERSION}
 LABEL org.name="Wizeline"
 LABEL org.image.title="CA-Microservices-GO"
 LABEL org.image.description="Alpine image to execute a GO Rest API service"
 
 ARG APP_NAME
-ARG APP_BIN
-ARG USER="${APP_NAME}user"
-ARG PORT=8080
-ARG WORKDIR
+ARG APP_PORT
+ARG APP_WORKDIR
+ARG USER="${APP_NAME}_user"
+ARG DB_MIGRATIONS_DIR
 
-WORKDIR ${WORKDIR}
+WORKDIR ${APP_WORKDIR}
 
 RUN  set -eux \
         && adduser \
@@ -41,9 +37,11 @@ RUN  set -eux \
                 --disabled-password \
                 ${USER}
 
-COPY --from=builder ${WORKDIR}/${APP_NAME} ${APP_BIN}
+COPY --from=builder ${APP_WORKDIR}/${APP_NAME} /usr/local/bin/${APP_NAME}
+COPY --from=builder ${APP_WORKDIR}/${DB_MIGRATIONS_DIR} ${DB_MIGRATIONS_DIR}
 
-EXPOSE ${PORT}
+EXPOSE ${APP_PORT}
+
 
 # USER MODE
 USER ${USER}

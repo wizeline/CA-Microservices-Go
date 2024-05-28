@@ -6,7 +6,9 @@ import (
 	"time"
 
 	"github.com/wizeline/CA-Microservices-Go/internal/entity"
+	"github.com/wizeline/CA-Microservices-Go/internal/repository"
 	"github.com/wizeline/CA-Microservices-Go/internal/service/mocks"
+	"github.com/wizeline/CA-Microservices-Go/internal/util"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -22,7 +24,7 @@ var (
 
 func TestUserService_Create(t *testing.T) {
 	type repo struct {
-		args entity.User
+		args repository.UserCreateArgs
 		err  error
 	}
 	tests := []struct {
@@ -40,7 +42,7 @@ func TestUserService_Create(t *testing.T) {
 				Username:  "lisa",
 				Passwd:    "pass123",
 			},
-			err: &InvalidInputErr{Field: "FirstName", Err: ErrEmptyValue},
+			err: &InvalidInputErr{Field: "FirstName", Err: util.ErrEmptyValue},
 		},
 		{
 			name: "Empty lastname)",
@@ -52,7 +54,7 @@ func TestUserService_Create(t *testing.T) {
 				Username:  "lisa",
 				Passwd:    "pass123",
 			},
-			err: &InvalidInputErr{Field: "LastName", Err: ErrEmptyValue},
+			err: &InvalidInputErr{Field: "LastName", Err: util.ErrEmptyValue},
 		},
 		{
 			name: "Empty email",
@@ -64,7 +66,7 @@ func TestUserService_Create(t *testing.T) {
 				Username:  "lisa",
 				Passwd:    "pass123",
 			},
-			err: &InvalidInputErr{Field: "Email", Err: ErrEmptyValue},
+			err: &InvalidInputErr{Field: "Email", Err: util.ErrEmptyValue},
 		},
 		{
 			name: "Invalid password",
@@ -81,13 +83,11 @@ func TestUserService_Create(t *testing.T) {
 		{
 			name: "Repository error",
 			repo: repo{
-				args: entity.User{
-					ID:        uint64(0),
+				args: repository.UserCreateArgs{
 					FirstName: "lisa",
 					LastName:  "Field",
 					Email:     "lisa@field.com",
 					Username:  "lisa",
-					Active:    false,
 				},
 				err: errRepoTest,
 			},
@@ -103,13 +103,11 @@ func TestUserService_Create(t *testing.T) {
 		{
 			name: "Valid user",
 			repo: repo{
-				args: entity.User{
-					ID:        uint64(0),
+				args: repository.UserCreateArgs{
 					FirstName: "lisa",
 					LastName:  "Field",
 					Email:     "lisa@field.com",
 					Username:  "lisa",
-					Active:    false,
 				},
 				err: nil,
 			},
@@ -129,7 +127,7 @@ func TestUserService_Create(t *testing.T) {
 			mockRepo := &mocks.UserRepo{}
 			// TODO: migrate the Create mocked function to validate the expected arguments to the repository. Currently, there are some issues due to the hashed password.
 			// mockRepo.On("Create", tt.repo.args).Return(tt.repo.err)
-			mockRepo.On("Create", mock.AnythingOfType("entity.User")).Return(tt.repo.err)
+			mockRepo.On("Create", mock.AnythingOfType("repository.UserCreateArgs")).Return(tt.repo.err)
 			svc := NewUserService(mockRepo)
 
 			err := svc.Create(tt.args)

@@ -32,7 +32,6 @@ func provideSwaggerHTTP(cfg config.Application, l logger.ZeroLog) controller.Swa
 }
 
 func NewApiHTTP(cfg config.Config, l logger.ZeroLog) (ApiHTTP, error) {
-
 	// Initialize database connection
 	dbConn, err := db.NewPgConn(cfg.Database.Postgres)
 	if err != nil {
@@ -41,9 +40,10 @@ func NewApiHTTP(cfg config.Config, l logger.ZeroLog) (ApiHTTP, error) {
 	l.Log().Debug().Msg("database connection ready")
 
 	// Run Migrations
-	err = migration.Run(dbConn.DB(), []migration.Migration{
-		migration.CreateUsersTable,
-	}, l)
+	err = migration.Run(dbConn.DB(), cfg.Database.MigrationsDir,
+		[]migration.Migration{
+			migration.CreateUsersTable,
+		}, l)
 	if err != nil {
 		return ApiHTTP{}, err
 	}
@@ -94,7 +94,7 @@ func (h ApiHTTP) Start() {
 
 // Shutdown performs tasks of safely shutting down processes and closing connections.
 func (h ApiHTTP) Shutdown() {
-	ctx, cancel := context.WithTimeout(context.Background(), h.cfg.ShutdownTimeout())
+	ctx, cancel := context.WithTimeout(context.Background(), h.cfg.ShutdownTimeout)
 	defer cancel()
 
 	if err := h.server.Shutdown(ctx); err != nil {

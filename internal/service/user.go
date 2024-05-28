@@ -5,10 +5,12 @@ import (
 	"time"
 
 	"github.com/wizeline/CA-Microservices-Go/internal/entity"
+	"github.com/wizeline/CA-Microservices-Go/internal/repository"
+	"github.com/wizeline/CA-Microservices-Go/internal/util"
 )
 
 type UserRepo interface {
-	Create(user entity.User) error
+	Create(user repository.UserCreateArgs) error
 	Read(id uint64) (entity.User, error)
 	ReadAll() ([]entity.User, error)
 	Update(user entity.User) error
@@ -67,11 +69,11 @@ func (s UserService) Create(args UserCreateArgs) error {
 	if err != nil {
 		return err
 	}
-	return s.repo.Create(entity.User{
+	return s.repo.Create(repository.UserCreateArgs{
 		FirstName: args.FirstName,
 		LastName:  args.LastName,
 		Email:     args.Email,
-		BirthDay:  args.BirthDay,
+		Birthday:  args.BirthDay,
 		Username:  args.Username,
 		Passwd:    hashedPwd,
 	})
@@ -180,7 +182,7 @@ func (s UserService) ChangeEmail(id uint64, email string) error {
 	if id == 0 {
 		return &InvalidInputErr{Field: "id", Err: ErrZeroValue}
 	}
-	if err := validateEmail(email); err != nil {
+	if err := util.ValidateEmail(email); err != nil {
 		return &InvalidInputErr{Field: "email", Err: err}
 	}
 
@@ -219,7 +221,7 @@ func (s UserService) IsActive(id uint64) (bool, error) {
 
 func (s UserService) ValidateLogin(username string, passwd string) (UserLoginResponse, error) {
 	if username == "" {
-		return UserLoginResponse{}, &InvalidInputErr{Field: "username", Err: ErrEmptyValue}
+		return UserLoginResponse{}, &InvalidInputErr{Field: "username", Err: util.ErrEmptyValue}
 	}
 	if err := validateUserPasswd(passwd); err != nil {
 		return UserLoginResponse{}, err

@@ -7,7 +7,7 @@ import "database/sql"
 
 var CreateUsersTable = Migration{
 	name:     "CreateUsersTable",
-	filename: "001_create_users_table.sql",
+	Filename: "001_create_users_table.sql",
 	Up: func(db *sql.DB, sqlContent string) error {
 		_, err := db.Exec(sqlContent)
 		return err

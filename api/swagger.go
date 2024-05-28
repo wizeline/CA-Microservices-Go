@@ -6,9 +6,9 @@ import (
 )
 
 // SetSwaggerInfo overrides the default configuration of the swagger instance
-func SetSwaggerInfo(cfg config.Application, l logger.ZeroLog) {
-	SwaggerInfo.Version = cfg.Version()
+func SetSwaggerInfo(appCfg config.Application, l logger.ZeroLog) {
+	SwaggerInfo.Version = appCfg.Version
 	SwaggerInfo.Host = "" // force to retrieve the address (host:port) directly from the API
-	SwaggerInfo.BasePath = cfg.BasePath()
+	SwaggerInfo.BasePath = appCfg.BasePath()
 	l.Log().Debug().Msg("configured swagger-info instance")
 }

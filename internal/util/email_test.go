@@ -1,4 +1,4 @@
-package service
+package util
 
 import (
 	"testing"
@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestIsValidEmail(t *testing.T) {
+func TestValidateEmail(t *testing.T) {
 	tests := []struct {
 		name    string
 		email   string
@@ -34,7 +34,7 @@ func TestIsValidEmail(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := validateEmail(tt.email)
+			err := ValidateEmail(tt.email)
 			if tt.wantErr {
 				assert.ErrorIs(t, err, tt.err)
 				return

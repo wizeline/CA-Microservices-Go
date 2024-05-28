@@ -1,22 +1,25 @@
 package service
 
-import "github.com/wizeline/CA-Microservices-Go/internal/entity"
+import (
+	"github.com/wizeline/CA-Microservices-Go/internal/entity"
+	"github.com/wizeline/CA-Microservices-Go/internal/util"
+)
 
 func validateUserCreate(u UserCreateArgs) error {
 	if u == (UserCreateArgs{}) {
 		return ErrEmptyArgs
 	}
 	if u.FirstName == "" {
-		return &InvalidInputErr{Field: "FirstName", Err: ErrEmptyValue}
+		return &InvalidInputErr{Field: "FirstName", Err: util.ErrEmptyValue}
 	}
 	if u.LastName == "" {
-		return &InvalidInputErr{Field: "LastName", Err: ErrEmptyValue}
+		return &InvalidInputErr{Field: "LastName", Err: util.ErrEmptyValue}
 	}
-	if err := validateEmail(u.Email); err != nil {
+	if err := util.ValidateEmail(u.Email); err != nil {
 		return &InvalidInputErr{Field: "Email", Err: err}
 	}
 	if u.Username == "" {
-		return &InvalidInputErr{Field: "Username", Err: ErrEmptyValue}
+		return &InvalidInputErr{Field: "Username", Err: util.ErrEmptyValue}
 	}
 	if err := validateUserPasswd(u.Passwd); err != nil {
 		return &InvalidInputErr{Field: "Passwd", Err: err}
@@ -43,7 +46,7 @@ func validateUserPasswd(pwd string) error {
 
 func validateUserFilter(filter string) error {
 	if filter == "" {
-		return &InvalidInputErr{Field: "filter", Err: ErrEmptyValue}
+		return &InvalidInputErr{Field: "filter", Err: util.ErrEmptyValue}
 	}
 	switch filter {
 	case "FirstName", "LastName", "Email", "Username":
