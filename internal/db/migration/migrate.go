@@ -9,25 +9,24 @@ import (
 	"github.com/wizeline/CA-Microservices-Go/internal/logger"
 )
 
-const migrationsDir = "./internal/db/migration/v1"
-
 type Migration struct {
 	name     string
-	filename string
+	Filename string
 	Up       func(db *sql.DB, sqlContent string) error
 	Down     func(db *sql.DB, sqlContent string) error
 }
 
 // Run applies the given migration functions
-func Run(db *sql.DB, migrations []Migration, l logger.ZeroLog) error {
+func Run(db *sql.DB, migrationsDir string, migrations []Migration, l logger.ZeroLog) error {
 	for _, m := range migrations {
-		l.Log().Debug().Str("name", m.name).Msg("applying migration")
+		filePath := filepath.Join(migrationsDir, m.Filename)
+		l.Log().Debug().Str("name", m.name).Str("file_path", filePath).
+			Msg("applying migration")
 
-		path := filepath.Join(migrationsDir, m.filename)
-		sqlContent, err := os.ReadFile(path)
+		sqlContent, err := os.ReadFile(filePath)
 		if err != nil {
 			// TODO: convert it to error migration type
-			return fmt.Errorf("failed reading SQL file %s: %s", m.filename, err)
+			return fmt.Errorf("failed reading SQL file %s: %s", m.Filename, err)
 		}
 
 		if err := m.Up(db, string(sqlContent)); err != nil {
