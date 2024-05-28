@@ -8,10 +8,8 @@ import (
 var (
 	ErrNotSupported = errors.New("not supported")
 	ErrZeroValue    = errors.New("zero value")
-	ErrEmptyValue   = errors.New("empty value")
 
 	ErrEmptyArgs        = errors.New("empty arguments")
-	ErrInvalidEmail     = errors.New("invalid email")
 	ErrInvalidPasswd    = errors.New("invalid password")
 	ErrPasswdDoNotMatch = errors.New("passwords do not match")
 )
