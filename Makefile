@@ -3,7 +3,7 @@ include ./deployments/.env
 export $(shell sed 's/=.*//' deployments/.env)
 
 # Application ---------------------------------------------
-.PHONY: network	app-img	build app stop remove clean logs-db
+.PHONY: network	app-img	build app start stop restart remove clean logs-db
 
 # Create Network for application
 network:
@@ -26,6 +26,10 @@ app: network
 	docker-compose -f ./deployments/docker-compose.yml up -d --build app
 
 # Stop Go application
+start:
+	docker-compose -f ./deployments/docker-compose.yml up -d app
+
+# Stop Go application
 stop:
 	docker compose -f ./deployments/docker-compose.yml stop app
 
@@ -33,11 +37,14 @@ stop:
 remove: stop
 	docker compose -f ./deployments/docker-compose.yml rm --force app
 
+# Stop Go application
+restart: stop remove start
+
 # Remove Docker containers and generated images
 clean: stop remove
 	docker compose -f ./deployments/docker-compose.yml stop db
 	docker compose -f ./deployments/docker-compose.yml rm --force db
-	docker rmi -f ${APP_NAME}:${GO_VERSION}-${ALPINE_VERSION} || true
+	docker rmi -f ${APP_IMAGE} || true
 	docker network rm ${NETWORK_NAME} || true
 	docker images -f dangling=true -q | xargs docker rmi
 
@@ -90,24 +97,34 @@ logs-db:
 .PHONY: pgadmin pgadmin-stop pgadmin-rm pgadmin-clean
 
 pgadmin:
-	docker pull dpage/pgadmin4:${PGADMIN_VERSION}
+	@echo "Starting PgAdmin..."
+	@echo "Pulling docker Pgadmin image..."
+	docker pull ${PGADMIN_IMAGE}
 # TODO: implement persistance data(volumen)
-	docker-compose -f ./deployments/docker-compose.yml up -d pgadmin
+	@echo "Running PgAdmin service..."
+	docker-compose -f ./deployments/docker-compose.yml up -d ${PGADMIN_SERVICE_NAME}
+	@echo "PgAdmin started."
 
 pgadmin-stop:
-	docker compose -f ./deployments/docker-compose.yml stop pgadmin
+	@echo "Stopping PgAdmin..."
+	docker compose -f ./deployments/docker-compose.yml stop ${PGADMIN_SERVICE_NAME}
+	@echo "Stopped PgAdmin."
 
 pgadmin-rm: pgadmin-stop
-	docker compose -f ./deployments/docker-compose.yml rm --force pgadmin
+	@echo "Removing PgAdmin..."
+	docker compose -f ./deployments/docker-compose.yml rm --force ${PGADMIN_SERVICE_NAME}
+	@echo "Removed PgAdmin."
 
 pgadmin-clean: pgadmin-rm
-	docker rmi -f dpage/pgadmin4:${PGADMIN_VERSION} || true
+	docker rmi -f ${PGADMIN_IMAGE} || true
 
 # Mocking ----------------------------------------------------
 .PHONY: mocks
 mocks:
+	@echo "Running Mocks..."
 	mockery --name=UserRepo --srcpkg=./internal/service --output=./internal/service/mocks
-	mockery --name=UserSvc --srcpkg=./internal/controller --output=./internal/controller/mocks
+	mockery --name=UserService --srcpkg=./internal/controller --output=./internal/controller/mocks
+	@echo "Mocks completed"
 
 # Swagger Documentation --------------------------------------
 .PHONY: swagger
@@ -122,9 +139,11 @@ help:
 	@echo "  network ........ Create network for application"
 	@echo "  app-img ........ Create and pull the required docker images"
 	@echo "  build .......... Build the application"
-	@echo "  app ............ Run Go application container"
+	@echo "  app ............ Build and Run the Go application container"
+	@echo "  start .......... Run Go application"
 	@echo "  stop ........... Stop Go application"
-	@echo "  remove ......... Stop and remove Go application container"
+	@echo "  remove ......... Stop and remove the Go application"
+	@echo "  restart ........ Restart the Go application (stop,remove,start)"
 	@echo "  clean .......... Stop, remove docker containers and generated images"
 	@echo "  start-db ....... Start the PostgreSQL database"
 	@echo "  stop-db ........ Stop the PostgreSQL database"
